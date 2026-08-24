@@ -45,6 +45,11 @@ from textual.widgets import (
 from textual.reactive import reactive
 from textual import on, work
 
+try:
+    from _version import __version__ as APP_VERSION
+except ImportError:
+    APP_VERSION = "1.0.0"
+
 from client import (
     NinerouterClient,
     NinerouterConfig,
@@ -1219,7 +1224,8 @@ class ServerPickerScreen(ModalScreen):
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="9Router Terminal Dashboard (standalone)")
+    parser = argparse.ArgumentParser(description=f"9Router Terminal Dashboard v{APP_VERSION} (standalone)")
+    parser.add_argument("--version", action="version", version=f"%(prog)s {APP_VERSION}")
     parser.add_argument("--url", default=None, help="9Router base URL (default: NINEROUTER_URL or http://localhost:20128)")
     parser.add_argument("--api-key", default=None, help="API key (default: NINEROUTER_KEY)")
     parser.add_argument("--config", default=None, help="Path to config.toml")

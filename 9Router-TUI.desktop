@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=9Router TUI
+Comment=Terminal Dashboard for 9Router — health, providers, nodes, combos, models, keys, usage, settings
+Exec=9Router-TUI
+Icon=9router-tui
+Terminal=true
+Categories=Utility;Network;ConsoleOnly;
+Keywords=9router;dashboard;tui;terminal;
+StartupNotify=false

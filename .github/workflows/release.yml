@@ -1,0 +1,149 @@
+name: Release (EXE + AppImage)
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (e.g. 1.0.0, without v prefix). Leave empty to use VERSION file."
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows-exe:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Resolve version
+        id: ver
+        shell: bash
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            VER="${{ inputs.version }}"
+          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            VER="${GITHUB_REF#refs/tags/v}"
+          else
+            VER="$(cat VERSION | tr -d ' \n\r')"
+          fi
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+          echo "Version: $VER"
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build EXE
+        run: |
+          python -m PyInstaller 9Router-TUI.spec --noconfirm
+          dir dist
+
+      - name: Rename with version
+        shell: bash
+        run: |
+          VER="${{ steps.ver.outputs.version }}"
+          cp "dist/9Router-TUI.exe" "dist/9Router-TUI-${VER}-windows-x86_64.exe"
+          ls -lh dist/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exe
+          path: |
+            dist/9Router-TUI.exe
+            dist/9Router-TUI-*-windows-*.exe
+
+  build-linux-appimage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Resolve version
+        id: ver
+        shell: bash
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            VER="${{ inputs.version }}"
+          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            VER="${GITHUB_REF#refs/tags/v}"
+          else
+            VER="$(cat VERSION | tr -d ' \n\r')"
+          fi
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+          echo "Version: $VER"
+
+      - name: Install deps
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller pillow
+
+      - name: Build binary
+        run: |
+          python3 -m PyInstaller 9Router-TUI.spec --noconfirm
+          ls -lh dist/
+          chmod +x dist/9Router-TUI || true
+
+      - name: Build AppImage
+        run: |
+          bash build-appimage.sh
+          ls -lh dist/*.AppImage || ls -lh dist/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: appimage
+          path: |
+            dist/*.AppImage
+            dist/9Router-TUI
+
+  release:
+    needs: [build-windows-exe, build-linux-appimage]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: ver
+        shell: bash
+        run: |
+          VER="${GITHUB_REF#refs/tags/v}"
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: List artifacts
+        run: |
+          find artifacts -type f | head -20
+          ls -R artifacts || true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/exe/*
+            artifacts/appimage/*.AppImage
+          generate_release_notes: true
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Also attach to manual dispatch without tag (upload as workflow artifacts only)
+  # For manual versioned release without tag, use: gh workflow run release.yml -f version=1.0.0

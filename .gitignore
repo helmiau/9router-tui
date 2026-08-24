@@ -12,3 +12,11 @@ servers.json
 .ruff_cache/
 .DS_Store
 Thumbs.db
+# PyInstaller build output
+build/
+dist/
+*.spec
+!9Router-TUI.spec
+# AppImage
+*.AppImage
+AppDir/

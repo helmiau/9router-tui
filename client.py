@@ -7,11 +7,22 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 from urllib.parse import urljoin
 
 import requests
+
+def _get_app_dir() -> str:
+    """Return writable app dir — exe dir when frozen, else file dir."""
+    if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+        # PyInstaller onefile: sys.executable is dist/9Router-TUI.exe
+        return os.path.dirname(os.path.abspath(sys.executable))
+    if getattr(sys, 'frozen', False):
+        return os.path.dirname(os.path.abspath(sys.executable))
+    return os.path.dirname(os.path.abspath(__file__))
 
 
 @dataclass
@@ -288,7 +299,7 @@ SERVERS_TOML_SECTION = "servers"  # [[servers]] in config.toml
 
 def _load_servers_from_file(base_dir: Optional[str] = None) -> List[ServerProfile]:
     """Load saved servers from servers.json or config.toml [[servers]]."""
-    base = base_dir or os.path.dirname(__file__)
+    base = base_dir or _get_app_dir()
     # 1. servers.json
     jpath = os.path.join(base, SERVERS_FILE)
     if os.path.exists(jpath):
@@ -340,7 +351,7 @@ def _load_servers_from_file(base_dir: Optional[str] = None) -> List[ServerProfil
 
 
 def save_servers_to_file(servers: List[ServerProfile], base_dir: Optional[str] = None) -> None:
-    base = base_dir or os.path.dirname(__file__)
+    base = base_dir or _get_app_dir()
     jpath = os.path.join(base, SERVERS_FILE)
     payload = [
         {"name": s.name, "url": s.url, "api_key": s.api_key, "timeout": s.timeout, "description": s.description}
@@ -354,13 +365,14 @@ def has_any_config(config_path: Optional[str] = None) -> bool:
     """True if env or config.toml or servers.json provides a URL."""
     if os.getenv("NINEROUTER_URL"):
         return True
-    base = os.path.dirname(config_path) if config_path and os.path.dirname(config_path) else os.path.dirname(__file__)
+    app_dir = _get_app_dir()
+    base = os.path.dirname(config_path) if config_path and os.path.dirname(config_path) else app_dir
     if os.path.exists(os.path.join(base, SERVERS_FILE)):
         return True
-    cfg_path = config_path or os.path.join(os.path.dirname(__file__), "config.toml")
+    cfg_path = config_path or os.path.join(app_dir, "config.toml")
     if os.path.exists(cfg_path):
         return True
-    if os.path.exists(os.path.join(os.path.dirname(__file__), ".env")):
+    if os.path.exists(os.path.join(app_dir, ".env")):
         return True
     return False
 
@@ -379,7 +391,8 @@ def load_config_from_env_and_file(config_path: Optional[str] = None) -> Ninerout
     password = os.getenv("NINEROUTER_PASSWORD", "")
 
     # Try config.toml
-    cfg_path = config_path or os.path.join(os.path.dirname(__file__), "config.toml")
+    app_dir = _get_app_dir()
+    cfg_path = config_path or os.path.join(app_dir, "config.toml")
     if os.path.exists(cfg_path):
         try:
             # Python 3.11+ has tomllib

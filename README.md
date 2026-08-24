@@ -1,21 +1,27 @@
 # 9Router TUI — Terminal Dashboard (Standalone)
 
-Terminal UI untuk **9Router** (`9router-master` v0.5.55) — **tidak ada hubungan dengan `omnexsync`**. Standalone, hanya butuh `NINEROUTER_URL` + `NINEROUTER_KEY`.
+> **Language:** **English** | [Indonesia](README_ID.md)
 
-Mencerminkan dashboard web resmi (`http://localhost:20128/dashboard`) di terminal: health, providers, nodes, combos, models, keys, usage, settings — semua via REST API `src/app/api/*` yang sama.
+![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey)
+![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 
-## Fitur
+Terminal UI for **9Router** (`9router-master` v0.5.55) — **no dependency on `omnexsync`**. Standalone, only needs `NINEROUTER_URL` + `NINEROUTER_KEY`.
 
-| Halaman | API | Deskripsi |
+Mirrors the official web dashboard (`http://localhost:20128/dashboard`) in the terminal: health, providers, nodes, combos, models, keys, usage, settings — all via the same REST API `src/app/api/*`.
+
+## Features
+
+| Page | API | Description |
 |---|---|---|
-| **Overview** | `GET /api/health`, `GET /api/settings`, `GET /api/version`, `GET /api/provider-nodes`, `GET /api/providers`, `GET /api/combos` | Health, version, ringkasan providers/nodes/combos, test all |
-| **Providers** | `GET /api/providers`, `POST /api/providers/test-batch` | Tabel connections (name, provider, priority, active, status), filter, detail JSON, test batch |
-| **Nodes** | `GET /api/provider-nodes` | Tabel nodes (name, prefix, type, apiType, baseUrl), filter, detail |
-| **Combos** | `GET /api/combos` | Tabel combos (name, kind, models count), detail models |
-| **Models** | `GET /api/models`, `GET /v1/models` | Tabel models (model, provider, alias, caps), filter |
-| **Keys** | `GET /api/keys` | Tabel dashboard keys (name, masked key, machineId) |
+| **Overview** | `GET /api/health`, `GET /api/settings`, `GET /api/version`, `GET /api/provider-nodes`, `GET /api/providers`, `GET /api/combos` | Health, version, providers/nodes/combos summary, test all |
+| **Providers** | `GET /api/providers`, `POST /api/providers/test-batch` | Connections table (name, provider, priority, active, status), filter, JSON detail, test batch |
+| **Nodes** | `GET /api/provider-nodes` | Nodes table (name, prefix, type, apiType, baseUrl), filter, detail |
+| **Combos** | `GET /api/combos` | Combos table (name, kind, models count), model detail |
+| **Models** | `GET /api/models`, `GET /v1/models` | Models table (model, provider, alias, caps), filter |
+| **Keys** | `GET /api/keys` | Dashboard keys table (name, masked key, machineId) |
 | **Usage** | `GET /api/usage/stats`, `GET /api/usage/history`, `GET /api/usage/chart` | Stats per period (today/24h/7d/30d/all), history table |
-| **Settings** | `GET /api/settings` | Dump JSON settings (providerStrategies, tunnel, dll) |
+| **Settings** | `GET /api/settings` | JSON dump of settings (providerStrategies, tunnel, etc.) |
 | **Update** | `GET /api/version` + npm registry, `updater.py` | Version check, update (npm/source/docker — local & remote via SSH), Docker status/logs/pull/restart (local & VPS) |
 
 ## Quick Start
@@ -24,14 +30,14 @@ Mencerminkan dashboard web resmi (`http://localhost:20128/dashboard`) di termina
 cd 9router-tui
 pip install -r requirements.txt
 
-# Tanpa konfigurasi? Langsung jalan — TUI akan tampilkan picker server interaktif
+# No config? Just run — TUI shows an interactive server picker
 python app.py
-# → Pilih: Local (http://localhost:20128) / Tunnel / Custom URL + API key
-# → Connect / Save & Connect (simpan ke servers.json)
+# → Pick: Local (http://localhost:20128) / Tunnel / Custom URL + API key
+# → Connect / Save & Connect (saved to servers.json)
 
-# Atau set env dulu
+# Or set env first
 export NINEROUTER_URL="http://localhost:20128"
-export NINEROUTER_KEY="sk-..."  # hanya jika requireApiKey=true
+export NINEROUTER_KEY="sk-..."  # only if requireApiKey=true
 python app.py
 
 # CLI (Rich, non-interactive)
@@ -46,24 +52,24 @@ python cli.py settings
 python cli.py test --mode all
 python cli.py v1-models
 
-# Kelola multi-server (tanpa config file)
+# Manage multi-server (no config file needed)
 python cli.py servers                    # list saved servers
 python cli.py servers --probe            # + health probe
 
-# Update & Docker (local only — remote hanya tampilkan info)
+# Update & Docker (local only — remote shows info only)
 python cli.py version                    # GET /api/version + npm latest
 python cli.py version --json
-python cli.py update --dry-run           # lihat plan (npm/source/docker auto-detect)
+python cli.py update --dry-run           # show plan (npm/source/docker auto-detect)
 python cli.py update --method docker --dry-run
-python cli.py update --yes               # eksekusi (konfirmasi y/N jika tanpa --yes)
+python cli.py update --yes               # execute (y/N confirmation without --yes)
 python cli.py docker status              # docker ps + images + compose
 python cli.py docker logs --tail 100
 python cli.py docker pull --image decolua/9router:latest
 python cli.py docker restart --container 9router
 python cli.py docker update --dry-run    # compose pull + up -d
 python cli.py server-add https://my-9router.example.com --name "My VPS" --api-key sk-...
-python cli.py server-use                 # picker interaktif
-python cli.py server-use "My VPS"        # langsung pakai
+python cli.py server-use                 # interactive picker
+python cli.py server-use "My VPS"        # use directly
 python cli.py server-remove "My VPS"
 
 # Custom URL/key per-command
@@ -71,19 +77,91 @@ python cli.py --url https://distribute-jimmy-church-audit.trycloudflare.com --ap
 python app.py --url http://localhost:20128 --api-key sk-...
 ```
 
-## Konfigurasi
+## Download (Release)
+
+Pre-built binaries — no Python needed:
+
+| Platform | File | How to Run |
+|---|---|---|
+| **Windows** | `9Router-TUI-1.0.0-windows-x86_64.exe` | Double-click |
+| **Linux** | `9Router-TUI-1.0.0-x86_64.AppImage` | `chmod +x *.AppImage && ./9Router-TUI-*.AppImage` |
+
+Get them from **GitHub Releases** (tag `v1.0.0`). Also available as `9Router-TUI.exe` / `9Router-TUI` without version suffix.
+
+```bash
+# Linux AppImage
+chmod +x 9Router-TUI-1.0.0-x86_64.AppImage
+./9Router-TUI-1.0.0-x86_64.AppImage --help
+./9Router-TUI-1.0.0-x86_64.AppImage --version
+
+# Windows
+9Router-TUI-1.0.0-windows-x86_64.exe --version
+```
+
+> Version is defined in `VERSION` (single source of truth). `app.py --version` and `cli.py --version` read from it. Bump `VERSION` and tag `v1.0.1` to trigger a new release.
+
+## Double-Click — Run Without PowerShell / Terminal
+
+No need to open PowerShell or type `python app.py` — just **double-click**.
+
+### Option 1: Standalone `.exe` / `.AppImage` (Recommended) ✅
+
+Pre-built via PyInstaller — **no Python required**.
+
+| Platform | Build | Output |
+|---|---|---|
+| Windows | `python -m PyInstaller 9Router-TUI.spec --noconfirm` | `dist/9Router-TUI.exe` |
+| Linux | `bash build-appimage.sh` | `dist/9Router-TUI-1.0.0-x86_64.AppImage` |
+
+- `console=True` in `9Router-TUI.spec` so double-click automatically opens a console window for the TUI.
+- Verified: `dist\9Router-TUI.exe --version` → `1.0.0`.
+- The spec at `9Router-TUI.spec` handles `textual` + `rich` via `collect_all` and bundles `VERSION` + `_version.py`.
+- `build/` and `dist/` are in `.gitignore` (only `9Router-TUI.spec` is tracked).
+
+**Desktop Shortcut (Windows):** right-click `dist\9Router-TUI.exe` → `Send to` → `Desktop (create shortcut)` → rename to "9Router TUI".
+
+**Linux Desktop Entry:** `9Router-TUI.desktop` is included — copy to `~/.local/share/applications/` and make the AppImage executable.
+
+**Add an Icon:** drop `icon.ico` / `icon.png` in the project root, change `icon=None` to `icon='icon.ico'` in `9Router-TUI.spec`, then rebuild. `build-appimage.sh` will pick up `icon.png`/`icon.ico` automatically.
+
+**Reduce Size:** `upx=True` is already enabled. Alternatives: build with `--onedir` then zip, or exclude `numpy`/`PIL` if unused. For a Start Menu installer, wrap the `.exe` with Inno Setup.
+
+### Option 2: `9Router-TUI.bat` / `9Router-TUI.cmd` (requires Python, Windows)
+
+Double-click `9Router-TUI.bat` — auto-runs `pip install -r requirements.txt` if `textual` is missing, then `python app.py`. If `.ps1` opens in Notepad (broken `ftype`), double-click `9Router-TUI.cmd` instead (bypasses the association).
+
+### Option 3: `9Router-TUI.pyw` (requires Python, Windows)
+
+`.pyw` is associated with `pythonw` — double-click spawns a new console via `CREATE_NEW_CONSOLE` and runs `app.py`. Fallback if `.bat` is blocked.
+
+### Option 4: `9Router-TUI.ps1` (requires Python, Windows)
+
+`powershell -ExecutionPolicy Bypass -File 9Router-TUI.ps1` — auto-installs deps. If double-click opens Notepad, fix: `ftype Microsoft.PowerShellScript.1="C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" "%1" %*` (admin).
+
+| File | Requires Python? | How to Use |
+|---|---|---|
+| `dist/9Router-TUI.exe` | No | Double-click directly (Windows) |
+| `dist/*.AppImage` | No | `chmod +x` + double-click / `./*.AppImage` (Linux) |
+| `9Router-TUI.bat` | Yes | Double-click (Windows) |
+| `9Router-TUI.cmd` | Yes | Double-click — fixes `.ps1` Notepad issue |
+| `9Router-TUI.pyw` | Yes | Double-click (`.pyw` associated with Python Launcher) |
+| `9Router-TUI.ps1` | Yes | `powershell -ExecutionPolicy Bypass -File 9Router-TUI.ps1` |
+| `9Router-TUI.spec` | For building | `pyinstaller 9Router-TUI.spec` |
+| `build-appimage.sh` | For building | `bash build-appimage.sh` (Linux) |
+
+## Configuration
 
 **Precedence:** `CLI --url/--api-key` > `env NINEROUTER_URL/NINEROUTER_KEY` > `config.toml [server]` / `servers.json` / `config.toml [[servers]]` > default `http://localhost:20128`
 
-**Tanpa konfigurasi:** `python app.py` langsung tampilkan **Server Picker** — pilih `Local` / `Tunnel` / `Custom` (isi URL + API key), lalu `Connect` atau `Save & Connect` (simpan ke `servers.json`).
+**No config:** `python app.py` shows a **Server Picker** — pick `Local` / `Tunnel` / `Custom` (enter URL + API key), then `Connect` or `Save & Connect` (saved to `servers.json`).
 
-**Multi-server:** Simpan banyak 9Router (Local, Tunnel, VPS) di `servers.json` atau `config.toml [[servers]]` — TUI bisa switch kapan saja dengan `s`.
+**Multi-server:** Save multiple 9Routers (Local, Tunnel, VPS) in `servers.json` or `config.toml [[servers]]` — switch anytime in the TUI with `s`.
 
 ```bash
 # .env
 NINEROUTER_URL=http://localhost:20128
 NINEROUTER_KEY=sk-fa5f...
-NINEROUTER_PASSWORD=  # jika dashboard pakai password
+NINEROUTER_PASSWORD=  # if dashboard uses password
 
 # config.toml
 [server]
@@ -91,19 +169,26 @@ url = "http://localhost:20128"
 api_key = ""
 timeout = 15
 
-# Multi-server (opsional)
+# Multi-server (optional)
 # [[servers]]
 # name = "Local"
 # url = "http://localhost:20128"
 # api_key = ""
-# description = "Local 9Router"
+# description = "Local 9Router (npm run dev)"
+#
+# [[servers]]
+# name = "Tunnel"
+# url = "https://distribute-jimmy-church-audit.trycloudflare.com"
+# api_key = "sk-..."
+# description = "Cloudflare Tunnel"
+#
 # [[servers]]
 # name = "VPS"
 # url = "https://9router.example.com"
 # api_key = "sk-..."
 # description = "My VPS"
 
-# servers.json (alternatif, lihat servers.json.example)
+# servers.json (alternative, see servers.json.example)
 # [
 #   {"name":"Local","url":"http://localhost:20128","api_key":"","description":"Local"},
 #   {"name":"VPS","url":"https://9router.example.com","api_key":"sk-...","description":"My VPS"}
@@ -115,15 +200,15 @@ refresh_interval = 30
 default_page = "overview"
 ```
 
-Lihat `config.toml.example`, `servers.json.example`, dan `.env.example`.
+See `config.toml.example`, `servers.json.example`, and `.env.example`.
 
 ## TUI Keybindings
 
-| Key | Aksi |
+| Key | Action |
 |---|---|
 | `q` | Quit |
-| `r` | Refresh halaman aktif |
-| `s` | **Switch Server** — buka picker (Local / Tunnel / Custom) |
+| `r` | Refresh active page |
+| `s` | **Switch Server** — open picker (Local / Tunnel / Custom) |
 | `1` | Overview |
 | `2` | Providers |
 | `3` | Nodes |
@@ -133,24 +218,24 @@ Lihat `config.toml.example`, `servers.json.example`, dan `.env.example`.
 | `7` | Usage |
 | `8` | Settings |
 | `9` | **Update** — version, update, Docker |
-| `↑/↓` | Navigasi tabel |
-| `Enter` | Lihat detail JSON baris terpilih / Connect di picker |
-| `Tab` | Ganti tab |
+| `↑/↓` | Navigate table |
+| `Enter` | View JSON detail for selected row / Connect in picker |
+| `Tab` | Switch tab |
 
-## Lokasi 9Router
+## 9Router Locations
 
-| Lokasi | URL |
+| Location | URL |
 |---|---|
-| Localhost | `http://localhost:20128` (default, `npm run dev` di `9router-master/`) |
-| Tunnel | `https://distribute-jimmy-church-audit.trycloudflare.com` (dari backup `tunnelUrl`) |
+| Localhost | `http://localhost:20128` (default, `npm run dev` in `9router-master/`) |
+| Tunnel | `https://distribute-jimmy-church-audit.trycloudflare.com` (from backup `tunnelUrl`) |
 | VPS | `https://9router.example.com` |
 | Docker | `http://9router:20128` |
 
-## API Reference (yang dipakai TUI)
+## API Reference (used by the TUI)
 
-Semua via `client.py` — tidak tulis SQLite langsung.
+All via `client.py` — no direct SQLite writes.
 
-| Method | Path | Deskripsi |
+| Method | Path | Description |
 |---|---|---|
 | `GET` | `/api/health` | `{ok:true}` |
 | `GET` | `/api/providers` | List connections |
@@ -169,18 +254,20 @@ Semua via `client.py` — tidak tulis SQLite langsung.
 
 | Error | Fix |
 |---|---|
-| `Cannot reach 9Router at http://localhost:20128` | Pastikan 9Router jalan: `cd 9router-master/9router-master && npm run dev` (PORT=20128) |
-| `401 Unauthorized` | Set `NINEROUTER_KEY` (Dashboard → Keys → copy `sk-...`) jika `requireApiKey=true` |
+| `Cannot reach 9Router at http://localhost:20128` | Make sure 9Router is running: `cd 9router-master/9router-master && npm run dev` (PORT=20128) |
+| `401 Unauthorized` | Set `NINEROUTER_KEY` (Dashboard → Keys → copy `sk-...`) if `requireApiKey=true` |
 | `No module named 'textual'` | `pip install -r requirements.txt` |
 | `No module named 'rich'` | `pip install rich` |
+| Double-click `.exe` closes immediately | Run via `cmd` to see the error: `dist\9Router-TUI.exe` — usually a wrong port/config |
+| `.pyw` does nothing | Ensure `.pyw` is associated with Python Launcher (`pyw`). Otherwise use `.bat` or `.exe` |
 
 ## Update & Docker (Local & Remote VPS)
 
-- **Version:** `GET /api/version` (current + latest dari npm `9router`, `hasUpdate`) + fallback `package.json` lokal + `https://registry.npmjs.org/9router/latest`
-- **Update:** auto-detect `npm` / `source` (git pull + npm install + build) / `docker` (compose pull + up -d atau docker pull). **Local** langsung eksekusi, **remote VPS** via SSH (jika `ssh_host` diisi di `servers.json`).
-- **Docker:** `docker ps` (containers), `docker images`, `docker logs --tail`, `docker pull`, `docker restart` / `compose restart`, `docker update` (pull + up -d) — semua bisa **local atau remote via SSH**.
+- **Version:** `GET /api/version` (current + latest from npm `9router`, `hasUpdate`) + fallback to local `package.json` + `https://registry.npmjs.org/9router/latest`
+- **Update:** auto-detects `npm` / `source` (git pull + npm install + build) / `docker` (compose pull + up -d or docker pull). **Local** executes directly, **remote VPS** via SSH (if `ssh_host` is set in `servers.json`).
+- **Docker:** `docker ps` (containers), `docker images`, `docker logs --tail`, `docker pull`, `docker restart` / `compose restart`, `docker update` (pull + up -d) — all work **locally or remotely via SSH**.
 
-**Remote VPS via SSH:** Tambahkan `ssh_host`/`ssh_user`/`ssh_key`/`compose_path` di `servers.json` atau `config.toml [[servers]]` — maka `update` & `docker` otomatis via `ssh user@host "docker ..."`.
+**Remote VPS via SSH:** Add `ssh_host`/`ssh_user`/`ssh_key`/`compose_path` in `servers.json` or `config.toml [[servers]]` — then `update` & `docker` automatically run via `ssh user@host "docker ..."`.
 
 ```json
 {
@@ -206,17 +293,17 @@ python cli.py --server VPS docker restart
 python cli.py --server VPS docker update --dry-run
 ```
 
-TUI tab **Update** (key `9`): Check Version, Update (dry-run / now), Docker Status/Logs/Pull/Restart/Update — semua via `updater.py`. Jika server aktif adalah VPS dengan `ssh_host`, semua tombol otomatis via SSH (label `(remote)`).
+TUI **Update** tab (key `9`): Check Version, Update (dry-run / now), Docker Status/Logs/Pull/Restart/Update — all via `updater.py`. If the active server is a VPS with `ssh_host`, all buttons automatically run via SSH (labeled `(remote)`).
 
 ## Docker
 
 Alpine-based (`python:3.12-alpine`), image `helmiau/9router-tui` — repo `https://github.com/helmiau/9router-tui`.
 
 ```bash
-# Build lokal
+# Build locally
 docker build -t helmiau/9router-tui:latest .
 
-# TUI (interaktif)
+# TUI (interactive)
 docker run -it --rm \
   -e NINEROUTER_URL=http://host.docker.internal:20128 \
   -e NINEROUTER_KEY=sk-... \
@@ -228,7 +315,7 @@ docker run --rm helmiau/9router-tui python cli.py health
 docker run --rm helmiau/9router-tui python cli.py providers
 docker run --rm -e NINEROUTER_URL=https://9router.example.com helmiau/9router-tui python cli.py version
 
-# Dengan servers.json & SSH (untuk VPS Docker via SSH)
+# With servers.json & SSH (for VPS Docker via SSH)
 docker run -it --rm \
   -v ./servers.json:/app/servers.json:ro \
   -v ~/.ssh:/home/appuser/.ssh:ro \
@@ -239,16 +326,19 @@ docker compose run --rm 9router-tui
 docker compose run --rm 9router-tui python cli.py health
 ```
 
-**GHCR & Docker Hub:** Workflow `.github/workflows/docker-publish.yml` build multi-arch (`linux/amd64`, `linux/arm64`) dan push ke `docker.io/helmiau/9router-tui` & `ghcr.io/helmiau/9router-tui` pada push ke `main`/`master` atau tag `v*`. Butuh secrets `DOCKERHUB_USERNAME` + `DOCKERHUB_TOKEN` (Docker Hub) — GHCR pakai `GITHUB_TOKEN` otomatis.
+**GHCR & Docker Hub:** The workflow at `.github/workflows/docker-publish.yml` builds multi-arch (`linux/amd64`, `linux/arm64`) and pushes to `docker.io/helmiau/9router-tui` & `ghcr.io/helmiau/9router-tui` on push to `main`/`master` or tag `v*`. Requires secrets `DOCKERHUB_USERNAME` + `DOCKERHUB_TOKEN` (Docker Hub) — GHCR uses `GITHUB_TOKEN` automatically.
 
-## Struktur
+## Project Structure
 
 ```
 9router-tui/
   app.py              # Textual TUI (9 tabs: Overview, Providers, Nodes, Combos, Models, Keys, Usage, Settings, Update)
   cli.py              # Rich CLI (health, providers, nodes, combos, models, keys, usage, settings, test, dashboard, servers, version, update, docker)
-  client.py           # NinerouterClient (semua REST API) + ServerProfile / probe
+  client.py           # NinerouterClient (all REST APIs) + ServerProfile / probe
   updater.py          # Version check, update (npm/source/docker), docker status/logs/pull/restart
+  9Router-TUI.spec    # PyInstaller spec — builds double-click .exe (dist/9Router-TUI.exe)
+  9Router-TUI.bat     # Double-click launcher (requires Python) — auto pip install + python app.py
+  9Router-TUI.pyw     # Double-click launcher .pyw (requires Python) — spawns new console
   Dockerfile          # Alpine (python:3.12-alpine) → helmiau/9router-tui
   docker-compose.yml  # TUI + CLI via compose
   .github/workflows/docker-publish.yml  # Build & push multi-arch
@@ -256,9 +346,10 @@ docker compose run --rm 9router-tui python cli.py health
   config.toml.example
   servers.json.example
   .env.example
-  README.md
+  README.md           # English (default)
+  README_ID.md        # Indonesia
 ```
 
-## Lisensi
+## License
 
-Standalone, tidak ada ketergantungan ke `omnexsync`. Ikuti lisensi `9router-master` (MIT).
+Standalone, no dependency on `omnexsync`. Follows the `9router-master` license (MIT).

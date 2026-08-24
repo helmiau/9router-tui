@@ -202,11 +202,17 @@ def get_version_via_api(client) -> VersionInfo:
         return VersionInfo(current=cur, latest=lat, has_update=has_up, source="npm", error=str(e)[:120])
 
 
+def _get_app_dir_path() -> Path:
+    """App dir — exe dir when frozen, else file dir."""
+    if getattr(sys, 'frozen', False):
+        return Path(sys.executable).resolve().parent
+    return Path(__file__).resolve().parent
+
 def get_local_version(search_paths: Optional[List[str]] = None) -> Optional[str]:
     """Try to read version from local 9router-master/package.json or cli/package.json."""
     candidates = search_paths or []
     # default candidates relative to this file
-    base = Path(__file__).resolve().parent
+    base = _get_app_dir_path()
     candidates += [
         str(base.parent / "9router-master" / "9router-master" / "package.json"),
         str(base.parent / "9router-master" / "package.json"),

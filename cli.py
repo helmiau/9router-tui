@@ -34,6 +34,11 @@ from rich.json import JSON
 from client import NinerouterClient, load_config_from_env_and_file, _load_servers_from_file, save_servers_to_file, ServerProfile, DEFAULT_SERVERS, probe_server, detect_host_info
 from updater import get_version_via_api, get_local_version, compare_versions, detect_install_method, detect_install_method_remote, docker_status, docker_status_remote, docker_logs, docker_logs_remote, run_update, run_update_remote, build_update_plan, is_local_url, fetch_npm_latest
 
+try:
+    from _version import __version__ as APP_VERSION
+except ImportError:
+    APP_VERSION = "1.0.0"
+
 console = Console()
 
 
@@ -634,7 +639,8 @@ def cmd_detect(client, args):
         print_json({"detected": found, "saved": [{"name": s.name, "url": s.url, "kind": c_dhi(s.url)["kind"]} for s in servers]}, "Detect JSON")
 
 def main():
-    parser = argparse.ArgumentParser(description="9Router CLI Dashboard (standalone, Rich)")
+    parser = argparse.ArgumentParser(description=f"9Router CLI Dashboard v{APP_VERSION} (standalone, Rich)")
+    parser.add_argument("--version", action="version", version=f"%(prog)s {APP_VERSION}")
     parser.add_argument("--url", default=None, help="9Router base URL (env NINEROUTER_URL)")
     parser.add_argument("--api-key", default=None, help="API key (env NINEROUTER_KEY)")
     parser.add_argument("--config", default=None, help="Path to config.toml")
