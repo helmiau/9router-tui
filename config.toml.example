@@ -1,0 +1,52 @@
+# 9Router TUI — Config (TOML)
+# Copy to config.toml and customize
+
+[server]
+# Base URL — same as NINEROUTER_URL env
+url = "http://localhost:20128"
+# API key for /v1/* and /api/* (if requireApiKey=true)
+api_key = ""
+# Timeout in seconds
+timeout = 15
+
+# ── Multiple servers (for TUI picker & CLI) ──
+# Each [[servers]] is a saved profile. TUI shows picker when no config,
+# and 's' anytime to switch. CLI: servers / server-add / server-use
+# Alternative: use servers.json (same shape, see servers.json.example)
+# [[servers]]
+# name = "Local"
+# url = "http://localhost:20128"
+# api_key = ""
+# description = "Local 9Router (npm run dev)"
+#
+# [[servers]]
+# name = "Tunnel"
+# url = "https://distribute-jimmy-church-audit.trycloudflare.com"
+# api_key = "sk-..."
+# description = "Cloudflare Tunnel"
+#
+# [[servers]]
+# name = "VPS"
+# url = "https://9router.example.com"
+# api_key = "sk-..."
+# description = "My VPS (Docker via SSH)"
+# ssh_host = "1.2.3.4"
+# ssh_user = "root"
+# ssh_port = 22
+# ssh_key = "~/.ssh/id_rsa"
+# compose_path = "/opt/9router/docker-compose.yml"
+# install_method = "docker"  # npm | source | docker
+
+[ui]
+# Theme: dark | light | auto
+theme = "dark"
+# Refresh interval in seconds (0 = manual only)
+refresh_interval = 30
+# Default page on launch
+default_page = "overview"  # overview | providers | nodes | combos | models | keys | usage | settings
+
+[display]
+# Show sensitive fields (apiKey) — masked by default
+show_secrets = false
+# Max rows per table page
+page_size = 20

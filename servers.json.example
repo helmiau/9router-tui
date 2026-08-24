@@ -1,0 +1,29 @@
+[
+  {
+    "name": "Local",
+    "url": "http://localhost:20128",
+    "api_key": "",
+    "timeout": 15,
+    "description": "Local 9Router (npm run dev)"
+  },
+  {
+    "name": "Tunnel",
+    "url": "https://distribute-jimmy-church-audit.trycloudflare.com",
+    "api_key": "sk-...",
+    "timeout": 15,
+    "description": "Cloudflare Tunnel"
+  },
+  {
+    "name": "VPS",
+    "url": "https://9router.example.com",
+    "api_key": "sk-...",
+    "timeout": 15,
+    "description": "My VPS (Docker via SSH)",
+    "ssh_host": "1.2.3.4",
+    "ssh_user": "root",
+    "ssh_port": 22,
+    "ssh_key": "~/.ssh/id_rsa",
+    "compose_path": "/opt/9router/docker-compose.yml",
+    "install_method": "docker"
+  }
+]

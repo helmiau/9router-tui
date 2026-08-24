@@ -1,0 +1,20 @@
+services:
+  9router-tui:
+    image: helmiau/9router-tui:latest
+    container_name: 9router-tui
+    stdin_open: true
+    tty: true
+    environment:
+      NINEROUTER_URL: http://host.docker.internal:20128
+      NINEROUTER_KEY: ${NINEROUTER_KEY:-}
+      TERM: xterm-256color
+    volumes:
+      # Persist servers.json / config.toml if you create them
+      - ./servers.json:/app/servers.json:ro
+      # - ./config.toml:/app/config.toml:ro
+      # SSH for remote VPS Docker via SSH
+      - ${HOME}/.ssh:/home/appuser/.ssh:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    # For TUI: docker compose run --rm 9router-tui
+    # For CLI: docker compose run --rm 9router-tui python cli.py health
