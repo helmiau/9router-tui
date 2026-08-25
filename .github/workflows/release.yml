@@ -2,6 +2,7 @@ name: Release (EXE + AppImage)
 
 on:
   push:
+    branches: [main, master]
     tags: ["v*"]
   workflow_dispatch:
     inputs:
@@ -114,8 +115,8 @@ jobs:
   release:
     needs: [build-windows-exe, build-linux-appimage]
     runs-on: ubuntu-latest
-    # Run on tag push OR manual dispatch with version input
-    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.version != '')
+    # Always run after builds — version comes from VERSION file on push to main, or tag/manual input
+    if: always() && (needs.build-windows-exe.result == 'success' && needs.build-linux-appimage.result == 'success')
     steps:
       - uses: actions/checkout@v4
 

@@ -72,7 +72,8 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
             type=raw,value=latest,enable={{is_default_branch}}
-            type=raw,value={{version}},enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+            type=raw,value=${{ steps.ver.outputs.version }},enable=true
+            type=raw,value=${{ steps.ver.outputs.version }}-{{sha}},enable={{is_default_branch}}
           labels: |
             org.opencontainers.image.title=9router-tui
             org.opencontainers.image.description=Terminal Dashboard for 9Router

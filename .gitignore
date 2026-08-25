@@ -22,6 +22,7 @@ dist/
 AppDir/
 # 9Router upstream (local reference only, not committed)
 9router-master/
+logs
 # Agent / PRD (local only)
 AGENTS.md
 PRD.md
