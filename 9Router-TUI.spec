@@ -25,6 +25,12 @@ a = Analysis(
     datas=textual_datas + rich_datas + [('VERSION', '.'), ('_version.py', '.')],
     hiddenimports=textual_hidden + rich_hidden + [
         'client', 'updater', 'cli', '_version',
+        'tui', 'tui.app', 'tui.helpers', 'tui.backup',
+        'tui.panes.overview', 'tui.panes.providers', 'tui.panes.nodes', 'tui.panes.combos',
+        'tui.panes.models', 'tui.panes.keys', 'tui.panes.usage', 'tui.panes.settings',
+        'tui.panes.pools', 'tui.panes.logs', 'tui.panes.update',
+        'tui.screens.picker', 'tui.screens.settings_edit', 'tui.screens.nodes',
+        'tui.screens.combos', 'tui.screens.keys', 'tui.screens.confirm', 'tui.screens.backup_restore',
         'textual.widgets', 'textual.app', 'textual.binding',
         'textual.containers', 'textual.screen', 'textual.reactive',
         'rich.console', 'rich.table', 'rich.panel', 'rich.json',

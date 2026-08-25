@@ -20,3 +20,10 @@ dist/
 # AppImage
 *.AppImage
 AppDir/
+# 9Router upstream (local reference only, not committed)
+9router-master/
+# Agent / PRD (local only)
+AGENTS.md
+PRD.md
+# Backups (contain real IDs/keys)
+9router-backup/
