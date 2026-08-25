@@ -1,10 +1,18 @@
-# 9Router TUI — Terminal Dashboard (Standalone)
+<p align="center">
+  <img src="icons/9tui-icon.png" width="160" alt="9Router TUI Icon" />
+</p>
 
-> **Language:** **English** | [Indonesia](README_ID.md)
+<h1 align="center">9Router TUI — Terminal Dashboard (Standalone)</h1>
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
-![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey)
-![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+<p align="center">
+  <a href="README_ID.md">Indonesia</a> • <b>English</b>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/version-1.2.0-blue" alt="Version" />
+  <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey" alt="Platform" />
+  <img src="https://img.shields.io/badge/python-3.10%2B-blue" alt="Python" />
+</p>
 
 Terminal UI for **9Router** (`9router-master` v0.5.55) — **no dependency on `omnexsync`**. Standalone, only needs `NINEROUTER_URL` + `NINEROUTER_KEY`.
 
@@ -15,14 +23,16 @@ Mirrors the official web dashboard (`http://localhost:20128/dashboard`) in the t
 | Page | API | Description |
 |---|---|---|
 | **Overview** | `GET /api/health`, `GET /api/settings`, `GET /api/version`, `GET /api/provider-nodes`, `GET /api/providers`, `GET /api/combos` | Health, version, providers/nodes/combos summary, test all |
-| **Providers** | `GET /api/providers`, `POST /api/providers/test-batch` | Connections table (name, provider, priority, active, status), filter, JSON detail, test batch |
-| **Nodes** | `GET /api/provider-nodes` | Nodes table (name, prefix, type, apiType, baseUrl), filter, detail |
-| **Combos** | `GET /api/combos` | Combos table (name, kind, models count), model detail |
-| **Models** | `GET /api/models`, `GET /v1/models` | Models table (model, provider, alias, caps), filter |
-| **Keys** | `GET /api/keys` | Dashboard keys table (name, masked key, machineId) |
-| **Usage** | `GET /api/usage/stats`, `GET /api/usage/history`, `GET /api/usage/chart` | Stats per period (today/24h/7d/30d/all), history table |
-| **Settings** | `GET /api/settings` | JSON dump of settings (providerStrategies, tunnel, etc.) |
-| **Update** | `GET /api/version` + npm registry, `updater.py` | Version check, update (npm/source/docker — local & remote via SSH), Docker status/logs/pull/restart (local & VPS) |
+| **Providers** | `GET /api/providers`, `POST /api/providers/test-batch`, `DELETE /api/providers/:id` | Connections table, filter, detail, test batch, delete |
+| **Nodes** | `GET /api/provider-nodes`, `POST/PUT/DELETE /api/provider-nodes` | Nodes table, filter, detail, Add/Edit/Delete, **Edit UID** (custom suffix like `cutad`, `hcnsec`) |
+| **Combos** | `GET /api/combos`, `POST/PUT/DELETE /api/combos` | Combos table, detail, Add/Edit/Delete |
+| **Models** | `GET /api/models`, `GET /v1/models` | Models table, filter |
+| **Keys** | `GET /api/keys`, `POST/DELETE /api/keys` | Dashboard keys table, Create/Delete, masked |
+| **Usage** | `GET /api/usage/stats`, `GET /api/usage/history` | Stats per period, history table |
+| **Settings** | `GET /api/settings`, `PATCH /api/settings` | View + multi-config editor (form + Raw JSON) |
+| **Pools** | `GET /api/proxy-pools` | Proxy pools table, detail |
+| **Logs** | `GET /api/usage/logs` | Request logs table, detail |
+| **Update** | `GET /api/version` + npm registry, `updater.py` | Version check, update (npm/source/docker — local & remote via SSH), Docker status/logs/pull/restart, **Backup/Restore** (`data.sqlite` + history) |
 
 ## Quick Start
 
@@ -83,22 +93,22 @@ Pre-built binaries — no Python needed:
 
 | Platform | File | How to Run |
 |---|---|---|
-| **Windows** | `9Router-TUI-1.0.0-windows-x86_64.exe` | Double-click |
-| **Linux** | `9Router-TUI-1.0.0-x86_64.AppImage` | `chmod +x *.AppImage && ./9Router-TUI-*.AppImage` |
+| **Windows** | `9Router-TUI-1.2.0-windows-x86_64.exe` | Double-click |
+| **Linux** | `9Router-TUI-1.2.0-x86_64.AppImage` | `chmod +x *.AppImage && ./9Router-TUI-*.AppImage` |
 
-Get them from **GitHub Releases** (tag `v1.0.0`). Also available as `9Router-TUI.exe` / `9Router-TUI` without version suffix.
+Get them from **GitHub Releases** (tag `v1.2.0`). Also available as `9Router-TUI.exe` / `9Router-TUI` without version suffix.
 
 ```bash
 # Linux AppImage
-chmod +x 9Router-TUI-1.0.0-x86_64.AppImage
-./9Router-TUI-1.0.0-x86_64.AppImage --help
-./9Router-TUI-1.0.0-x86_64.AppImage --version
+chmod +x 9Router-TUI-1.2.0-x86_64.AppImage
+./9Router-TUI-1.2.0-x86_64.AppImage --help
+./9Router-TUI-1.2.0-x86_64.AppImage --version
 
 # Windows
-9Router-TUI-1.0.0-windows-x86_64.exe --version
+9Router-TUI-1.2.0-windows-x86_64.exe --version
 ```
 
-> Version is defined in `VERSION` (single source of truth). `app.py --version` and `cli.py --version` read from it. Bump `VERSION` and tag `v1.0.1` to trigger a new release.
+> Version is defined in `VERSION` (single source of truth). `app.py --version` and `cli.py --version` read from it. Bump `VERSION` and tag `v1.2.1` to trigger a new release.
 
 ## Double-Click — Run Without PowerShell / Terminal
 
@@ -111,10 +121,11 @@ Pre-built via PyInstaller — **no Python required**.
 | Platform | Build | Output |
 |---|---|---|
 | Windows | `python -m PyInstaller 9Router-TUI.spec --noconfirm` | `dist/9Router-TUI.exe` |
-| Linux | `bash build-appimage.sh` | `dist/9Router-TUI-1.0.0-x86_64.AppImage` |
+| Linux | `bash build-appimage.sh` | `dist/9Router-TUI-1.2.0-x86_64.AppImage` |
 
 - `console=True` in `9Router-TUI.spec` so double-click automatically opens a console window for the TUI.
-- Verified: `dist\9Router-TUI.exe --version` → `1.0.0`.
+- `icon='icon.ico'` — built from `icons/9tui-icon.png` (512x512) with multi-size ICO.
+- Verified: `dist\9Router-TUI.exe --version` → `1.2.0`.
 - The spec at `9Router-TUI.spec` handles `textual` + `rich` via `collect_all` and bundles `VERSION` + `_version.py`.
 - `build/` and `dist/` are in `.gitignore` (only `9Router-TUI.spec` is tracked).
 
@@ -122,7 +133,7 @@ Pre-built via PyInstaller — **no Python required**.
 
 **Linux Desktop Entry:** `9Router-TUI.desktop` is included — copy to `~/.local/share/applications/` and make the AppImage executable.
 
-**Add an Icon:** drop `icon.ico` / `icon.png` in the project root, change `icon=None` to `icon='icon.ico'` in `9Router-TUI.spec`, then rebuild. `build-appimage.sh` will pick up `icon.png`/`icon.ico` automatically.
+**Icon:** `icon.ico` / `icon.png` (512x512) generated from `icons/9tui-icon.png` — already set as `icon='icon.ico'` in `9Router-TUI.spec`. `build-appimage.sh` picks up `icon.png` automatically.
 
 **Reduce Size:** `upx=True` is already enabled. Alternatives: build with `--onedir` then zip, or exclude `numpy`/`PIL` if unused. For a Start Menu installer, wrap the `.exe` with Inno Setup.
 
@@ -217,10 +228,15 @@ See `config.toml.example`, `servers.json.example`, and `.env.example`.
 | `6` | Keys |
 | `7` | Usage |
 | `8` | Settings |
-| `9` | **Update** — version, update, Docker |
+| `9` | **Update** — version, update, Docker, Backup/Restore |
+| `0` | Pools |
+| `-` | Logs |
 | `↑/↓` | Navigate table |
 | `Enter` | View JSON detail for selected row / Connect in picker |
 | `Tab` | Switch tab |
+| `Ctrl+C` | Copy detail (or Input selection) |
+| `Ctrl+Shift+C` | Copy detail (force) |
+| `Ctrl+A` | Select all in Input |
 
 ## 9Router Locations
 
@@ -245,7 +261,20 @@ All via `client.py` — no direct SQLite writes.
 | `GET` | `/api/models` | Models + aliases |
 | `GET` | `/v1/models` | OpenAI-compatible models |
 | `GET` | `/api/keys` | Dashboard keys |
+| `POST` | `/api/keys` | Create key |
+| `DELETE` | `/api/keys/:id` | Delete key |
 | `GET` | `/api/settings` | Settings |
+| `PATCH` | `/api/settings` | Update settings (multi-config) |
+| `GET` | `/api/provider-nodes` | List nodes |
+| `POST` | `/api/provider-nodes` | Create node |
+| `PUT` | `/api/provider-nodes/:id` | Update node |
+| `DELETE` | `/api/provider-nodes/:id` | Delete node |
+| `GET` | `/api/combos` | List combos |
+| `POST` | `/api/combos` | Create combo |
+| `PUT` | `/api/combos/:id` | Update combo |
+| `DELETE` | `/api/combos/:id` | Delete combo |
+| `GET` | `/api/proxy-pools` | Proxy pools |
+| `GET` | `/api/usage/logs` | Request logs |
 | `GET` | `/api/usage/stats?period=7d` | Usage stats |
 | `GET` | `/api/usage/history?limit=50` | History |
 | `GET` | `/api/version` | Version |
@@ -332,10 +361,17 @@ docker compose run --rm 9router-tui python cli.py health
 
 ```
 9router-tui/
-  app.py              # Textual TUI (9 tabs: Overview, Providers, Nodes, Combos, Models, Keys, Usage, Settings, Update)
+  app.py              # Shim — from tui.app import NineRouterTUI (keeps double-click & PyInstaller working)
+  tui/                # Modular TUI package
+    app.py            # NineRouterTUI (App, BINDINGS, clipboard)
+    helpers.py        # mask_key, fmt_time, _store_plain, UID helpers
+    backup.py         # Backup/restore helpers (data.sqlite + history, local & SSH)
+    panes/            # 11 panes: overview, providers, nodes, combos, models, keys, usage, settings, pools, logs, update
+    screens/          # Modals: picker, settings_edit, nodes, combos, keys, confirm, backup_restore
   cli.py              # Rich CLI (health, providers, nodes, combos, models, keys, usage, settings, test, dashboard, servers, version, update, docker)
   client.py           # NinerouterClient (all REST APIs) + ServerProfile / probe
   updater.py          # Version check, update (npm/source/docker), docker status/logs/pull/restart
+  icons/              # App icons (9tui-icon.png → icon.ico/icon.png for exe/AppImage)
   9Router-TUI.spec    # PyInstaller spec — builds double-click .exe (dist/9Router-TUI.exe)
   9Router-TUI.bat     # Double-click launcher (requires Python) — auto pip install + python app.py
   9Router-TUI.pyw     # Double-click launcher .pyw (requires Python) — spawns new console

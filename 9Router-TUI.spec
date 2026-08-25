@@ -65,5 +65,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=None,  # ganti ke 'icon.ico' jika ada
+    icon='icon.ico',
 )

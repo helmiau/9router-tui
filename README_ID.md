@@ -1,10 +1,18 @@
-# 9Router TUI — Terminal Dashboard (Standalone)
+<p align="center">
+  <img src="icons/9tui-icon.png" width="160" alt="9Router TUI Icon" />
+</p>
 
-> **Language:** [English](README.md) | **Indonesia**
+<h1 align="center">9Router TUI — Terminal Dashboard (Standalone)</h1>
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
-![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey)
-![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+<p align="center">
+  <b>Indonesia</b> • <a href="README.md">English</a>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/version-1.2.0-blue" alt="Version" />
+  <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey" alt="Platform" />
+  <img src="https://img.shields.io/badge/python-3.10%2B-blue" alt="Python" />
+</p>
 
 Terminal UI untuk **9Router** (`9router-master` v0.5.55) — **tidak ada hubungan dengan `omnexsync`**. Standalone, hanya butuh `NINEROUTER_URL` + `NINEROUTER_KEY`.
 

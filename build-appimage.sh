@@ -37,13 +37,17 @@ mkdir -p "$APPDIR/usr/bin" "$APPDIR/usr/share/applications" "$APPDIR/usr/share/i
 cp "$BIN" "$APPDIR/usr/bin/9Router-TUI"
 cp "$ROOT/9Router-TUI.desktop" "$APPDIR/9Router-TUI.desktop"
 cp "$ROOT/9Router-TUI.desktop" "$APPDIR/usr/share/applications/9Router-TUI.desktop"
-# Icon: use a simple placeholder if no icon exists
-if [ -f "$ROOT/icon.png" ]; then
+# Icon: prefer icons/9tui-icon.png, then icon.png, then icon.ico
+if [ -f "$ROOT/icons/9tui-icon.png" ]; then
+  cp "$ROOT/icons/9tui-icon.png" "$APPDIR/9router-tui.png"
+  cp "$ROOT/icons/9tui-icon.png" "$APPDIR/.DirIcon"
+  cp "$ROOT/icons/9tui-icon.png" "$APPDIR/usr/share/icons/hicolor/256x256/apps/9router-tui.png"
+  cp "$ROOT/icons/9tui-icon.png" "$APPDIR/icon.png" 2>/dev/null || true
+elif [ -f "$ROOT/icon.png" ]; then
   cp "$ROOT/icon.png" "$APPDIR/9router-tui.png"
   cp "$ROOT/icon.png" "$APPDIR/.DirIcon"
   cp "$ROOT/icon.png" "$APPDIR/usr/share/icons/hicolor/256x256/apps/9router-tui.png"
 elif [ -f "$ROOT/icon.ico" ]; then
-  # try convert via Python if available
   python3 -c "from PIL import Image; Image.open('$ROOT/icon.ico').save('$APPDIR/9router-tui.png')" 2>/dev/null || cp "$ROOT/icon.ico" "$APPDIR/9router-tui.png" || true
   cp "$APPDIR/9router-tui.png" "$APPDIR/.DirIcon" 2>/dev/null || true
 else
