@@ -82,6 +82,36 @@ def fmt_time(s: Optional[str]) -> str:
         return s[:19]
 
 
+def _store_plain(widget, plain: str) -> None:
+    """Store plain text on Static for clipboard copy."""
+    try:
+        widget._plain_text = plain  # type: ignore[attr-defined]
+        try:
+            app = widget.app  # type: ignore[attr-defined]
+            if hasattr(app, "_detail_plain"):
+                wid = getattr(widget, "id", "") or ""
+                key_map = {
+                    "overview-body": "overview",
+                    "providers-detail": "providers",
+                    "nodes-detail": "nodes",
+                    "combos-detail": "combos",
+                    "models-detail": "models",
+                    "keys-detail": "keys",
+                    "usage-detail": "usage",
+                    "usage-body": "usage",
+                    "settings-body": "settings",
+                    "update-log": "update",
+                    "update-version-body": "update",
+                    "update-docker-body": "update",
+                }
+                k = key_map.get(wid)
+                if k:
+                    app._detail_plain[k] = plain  # type: ignore[attr-defined]
+        except Exception:
+            pass
+    except Exception:
+        pass
+
 def status_style(s: str) -> str:
     s = (s or "").lower()
     if s in ("active", "ok", "success"):
@@ -104,6 +134,7 @@ class OverviewPane(Static):
         yield Horizontal(
             Button("Refresh", id="btn-overview-refresh", variant="primary"),
             Button("Test All Providers", id="btn-test-all", variant="default"),
+            Button("Copy", id="btn-overview-copy", variant="default"),
         )
 
     async def on_mount(self) -> None:
@@ -143,9 +174,13 @@ class OverviewPane(Static):
             lines.append("")
             lines.append("[dim]Press 'r' to refresh, 't' to test all providers[/]")
 
-            body.update("\n".join(lines))
+            plain = "\n".join(lines)
+            body.update(plain)
+            _store_plain(body, plain)
         except Exception as e:
-            body.update(f"[red]Error: {e}[/]\n[dim]Check NINEROUTER_URL and NINEROUTER_KEY[/]")
+            err = f"Error: {e}\nCheck NINEROUTER_URL and NINEROUTER_KEY"
+            body.update(f"[red]{err}[/]")
+            _store_plain(body, err)
 
     @on(Button.Pressed, "#btn-overview-refresh")
     async def on_refresh(self) -> None:
@@ -157,9 +192,24 @@ class OverviewPane(Static):
         body.update("Testing all providers...")
         try:
             res = await asyncio.to_thread(self.client.test_providers, "all")
+            txt = f"Test done:\n{json.dumps(res, indent=2, ensure_ascii=False)[:2000]}"
             body.update(f"[green]Test done:[/]\n{json.dumps(res, indent=2, ensure_ascii=False)[:2000]}")
+            _store_plain(body, txt)
         except Exception as e:
             body.update(f"[red]Test failed: {e}[/]")
+            _store_plain(body, f"Test failed: {e}")
+
+    @on(Button.Pressed, "#btn-overview-copy")
+    def on_copy(self) -> None:
+        try:
+            w = self.query_one("#overview-body", Static)
+            plain = getattr(w, "_plain_text", "") or str(w.content) if hasattr(w, "content") else ""
+            if plain:
+                self.app._copy_text(plain)  # type: ignore[attr-defined]
+            else:
+                self.app.notify("Nothing to copy", severity="warning")  # type: ignore[attr-defined]
+        except Exception:
+            pass
 
 
 class ProvidersPane(Static):
@@ -177,6 +227,7 @@ class ProvidersPane(Static):
         )
         yield DataTable(id="table-providers", cursor_type="row", zebra_stripes=True)
         yield Static("", id="providers-detail")
+        yield Horizontal(Button("Copy Detail", id="btn-providers-copy", variant="default"))
 
     def on_mount(self) -> None:
         table = self.query_one("#table-providers", DataTable)
@@ -200,9 +251,14 @@ class ProvidersPane(Static):
                     p.get("testStatus", p.get("status", "—")),
                     p.get("id", "")[:8],
                 )
-            self.query_one("#providers-detail", Static).update(f"[dim]{len(data)} connections[/]")
+            w = self.query_one("#providers-detail", Static)
+            txt = f"{len(data)} connections"
+            w.update(f"[dim]{txt}[/]")
+            _store_plain(w, txt)
         except Exception as e:
-            self.query_one("#providers-detail", Static).update(f"[red]{e}[/]")
+            w = self.query_one("#providers-detail", Static)
+            w.update(f"[red]{e}[/]")
+            _store_plain(w, str(e))
 
     @on(Button.Pressed, "#btn-providers-refresh")
     def on_refresh(self) -> None:
@@ -214,9 +270,12 @@ class ProvidersPane(Static):
         detail.update("Testing...")
         try:
             res = await asyncio.to_thread(self.client.test_providers, "all")
-            detail.update(f"[green]Test:[/] {json.dumps(res, indent=2)[:1500]}")
+            txt = json.dumps(res, indent=2)[:1500]
+            detail.update(f"[green]Test:[/] {txt}")
+            _store_plain(detail, txt)
         except Exception as e:
             detail.update(f"[red]{e}[/]")
+            _store_plain(detail, str(e))
 
     @on(Input.Changed, "#input-providers-filter")
     def on_filter(self, event: Input.Changed) -> None:
@@ -267,6 +326,7 @@ class NodesPane(Static):
         )
         yield DataTable(id="table-nodes", cursor_type="row", zebra_stripes=True)
         yield Static("", id="nodes-detail")
+        yield Horizontal(Button("Copy Detail", id="btn-nodes-copy", variant="default"))
 
     def on_mount(self) -> None:
         table = self.query_one("#table-nodes", DataTable)
@@ -290,9 +350,14 @@ class NodesPane(Static):
                     n.get("baseUrl", n.get("base_url", "—"))[:40],
                     n.get("id", "")[:12],
                 )
-            self.query_one("#nodes-detail", Static).update(f"[dim]{len(data)} nodes[/]")
+            w = self.query_one("#nodes-detail", Static)
+            txt = f"{len(data)} nodes"
+            w.update(f"[dim]{txt}[/]")
+            _store_plain(w, txt)
         except Exception as e:
-            self.query_one("#nodes-detail", Static).update(f"[red]{e}[/]")
+            w = self.query_one("#nodes-detail", Static)
+            w.update(f"[red]{e}[/]")
+            _store_plain(w, str(e))
 
     @on(Button.Pressed, "#btn-nodes-refresh")
     def on_refresh(self) -> None:
@@ -341,6 +406,7 @@ class CombosPane(Static):
         yield Horizontal(Button("Refresh", id="btn-combos-refresh", variant="primary"))
         yield DataTable(id="table-combos", cursor_type="row", zebra_stripes=True)
         yield Static("", id="combos-detail")
+        yield Horizontal(Button("Copy Detail", id="btn-combos-copy", variant="default"))
 
     def on_mount(self) -> None:
         table = self.query_one("#table-combos", DataTable)
@@ -363,13 +429,30 @@ class CombosPane(Static):
                     f"{len(models)} models" if models else "—",
                     c.get("id", "")[:8],
                 )
-            self.query_one("#combos-detail", Static).update(f"[dim]{len(data)} combos[/]")
+            w = self.query_one("#combos-detail", Static)
+            txt = f"{len(data)} combos"
+            w.update(f"[dim]{txt}[/]")
+            _store_plain(w, txt)
         except Exception as e:
-            self.query_one("#combos-detail", Static).update(f"[red]{e}[/]")
+            w = self.query_one("#combos-detail", Static)
+            w.update(f"[red]{e}[/]")
+            _store_plain(w, str(e))
 
     @on(Button.Pressed, "#btn-combos-refresh")
     def on_refresh(self) -> None:
         self.refresh_data()
+
+    @on(Button.Pressed, "#btn-combos-copy")
+    def on_copy(self) -> None:
+        try:
+            w = self.query_one("#combos-detail", Static)
+            plain = getattr(w, "_plain_text", "") or ""
+            if plain:
+                self.app._copy_text(plain)  # type: ignore[attr-defined]
+            else:
+                self.app.notify("Nothing to copy — select a row first", severity="warning")  # type: ignore[attr-defined]
+        except Exception:
+            pass
 
     @on(DataTable.RowSelected, "#table-combos")
     def on_row_selected(self, event: DataTable.RowSelected) -> None:
@@ -378,9 +461,10 @@ class CombosPane(Static):
             rec = self._data[idx] if 0 <= idx < len(self._data) else None
             if rec:
                 models = rec.get("models", [])
-                self.query_one("#combos-detail", Static).update(
-                    f"[bold]{rec.get('name')}[/]  kind={rec.get('kind','—')}  id={rec.get('id')}\n[dim]{json.dumps(models, indent=2, ensure_ascii=False)[:3000]}[/]"
-                )
+                txt = f"{rec.get('name')}  kind={rec.get('kind','—')}  id={rec.get('id')}\n{json.dumps(models, indent=2, ensure_ascii=False)[:3000]}"
+                w = self.query_one("#combos-detail", Static)
+                w.update(f"[bold]{rec.get('name')}[/]  kind={rec.get('kind','—')}  id={rec.get('id')}\n[dim]{json.dumps(models, indent=2, ensure_ascii=False)[:3000]}[/]")
+                _store_plain(w, txt)
         except Exception:
             pass
 
@@ -399,6 +483,7 @@ class ModelsPane(Static):
         )
         yield DataTable(id="table-models", cursor_type="row", zebra_stripes=True)
         yield Static("", id="models-detail")
+        yield Horizontal(Button("Copy Detail", id="btn-models-copy", variant="default"))
 
     def on_mount(self) -> None:
         table = self.query_one("#table-models", DataTable)
@@ -424,13 +509,30 @@ class ModelsPane(Static):
                     m.get("alias", "—")[:20],
                     cap_str[:24],
                 )
-            self.query_one("#models-detail", Static).update(f"[dim]{len(models)} models[/]")
+            w = self.query_one("#models-detail", Static)
+            txt = f"{len(models)} models"
+            w.update(f"[dim]{txt}[/]")
+            _store_plain(w, txt)
         except Exception as e:
-            self.query_one("#models-detail", Static).update(f"[red]{e}[/]")
+            w = self.query_one("#models-detail", Static)
+            w.update(f"[red]{e}[/]")
+            _store_plain(w, str(e))
 
     @on(Button.Pressed, "#btn-models-refresh")
     def on_refresh(self) -> None:
         self.refresh_data()
+
+    @on(Button.Pressed, "#btn-models-copy")
+    def on_copy(self) -> None:
+        try:
+            w = self.query_one("#models-detail", Static)
+            plain = getattr(w, "_plain_text", "") or ""
+            if plain:
+                self.app._copy_text(plain)  # type: ignore[attr-defined]
+            else:
+                self.app.notify("Nothing to copy — select a row first", severity="warning")  # type: ignore[attr-defined]
+        except Exception:
+            pass
 
     @on(Input.Changed, "#input-models-filter")
     def on_filter(self, event: Input.Changed) -> None:
@@ -462,6 +564,7 @@ class KeysPane(Static):
         yield Horizontal(Button("Refresh", id="btn-keys-refresh", variant="primary"))
         yield DataTable(id="table-keys", cursor_type="row", zebra_stripes=True)
         yield Static("", id="keys-detail")
+        yield Horizontal(Button("Copy Detail", id="btn-keys-copy", variant="default"))
 
     def on_mount(self) -> None:
         table = self.query_one("#table-keys", DataTable)
@@ -484,9 +587,14 @@ class KeysPane(Static):
                     fmt_time(k.get("createdAt", k.get("created_at", ""))),
                     k.get("id", "")[:8],
                 )
-            self.query_one("#keys-detail", Static).update(f"[dim]{len(data)} keys[/]")
+            w = self.query_one("#keys-detail", Static)
+            txt = f"{len(data)} keys"
+            w.update(f"[dim]{txt}[/]")
+            _store_plain(w, txt)
         except Exception as e:
-            self.query_one("#keys-detail", Static).update(f"[red]{e}[/]")
+            w = self.query_one("#keys-detail", Static)
+            w.update(f"[red]{e}[/]")
+            _store_plain(w, str(e))
 
     @on(Button.Pressed, "#btn-keys-refresh")
     def on_refresh(self) -> None:
@@ -507,6 +615,7 @@ class UsagePane(Static):
         yield Static("", id="usage-body")
         yield DataTable(id="table-usage-history", cursor_type="row", zebra_stripes=True)
         yield Static("", id="usage-detail")
+        yield Horizontal(Button("Copy Detail", id="btn-usage-copy", variant="default"))
 
     def on_mount(self) -> None:
         table = self.query_one("#table-usage-history", DataTable)
@@ -527,9 +636,12 @@ class UsagePane(Static):
         body.update("Loading...")
         try:
             stats = await asyncio.to_thread(self.client.get_usage_stats, period)
+            txt = f"Period: {period}  {json.dumps(stats, indent=2, ensure_ascii=False)[:2000]}"
             body.update(f"[bold]Period:[/] {period}  [dim]{json.dumps(stats, indent=2, ensure_ascii=False)[:2000]}[/]")
+            _store_plain(body, txt)
         except Exception as e:
             body.update(f"[red]Stats error: {e}[/]")
+            _store_plain(body, f"Stats error: {e}")
         try:
             hist = await asyncio.to_thread(self.client.get_usage_history, 50)
             items = hist.get("history", hist.get("items", hist.get("data", []))) if isinstance(hist, dict) else hist
@@ -550,6 +662,18 @@ class UsagePane(Static):
     def on_refresh(self) -> None:
         self.refresh_data()
 
+    @on(Button.Pressed, "#btn-usage-copy")
+    def on_copy(self) -> None:
+        try:
+            w = self.query_one("#usage-detail", Static)
+            plain = getattr(w, "_plain_text", "") or ""
+            if plain:
+                self.app._copy_text(plain)  # type: ignore[attr-defined]
+            else:
+                self.app.notify("Nothing to copy", severity="warning")  # type: ignore[attr-defined]
+        except Exception:
+            pass
+
     @on(Select.Changed, "#select-usage-period")
     def on_period_changed(self, event: Select.Changed) -> None:
         self.refresh_data()
@@ -562,7 +686,7 @@ class SettingsPane(Static):
 
     def compose(self) -> ComposeResult:
         yield Label("Settings — 9Router Config (GET/PATCH /api/settings)", id="settings-title")
-        yield Horizontal(Button("Refresh", id="btn-settings-refresh", variant="primary"))
+        yield Horizontal(Button("Refresh", id="btn-settings-refresh", variant="primary"), Button("Copy", id="btn-settings-copy", variant="default"))
         yield Static("", id="settings-body")
 
     def on_mount(self) -> None:
@@ -574,9 +698,12 @@ class SettingsPane(Static):
         body.update("Loading...")
         try:
             data = await asyncio.to_thread(self.client.get_settings)
-            body.update(f"[dim]{json.dumps(data, indent=2, ensure_ascii=False)[:6000]}[/]")
+            txt = json.dumps(data, indent=2, ensure_ascii=False)[:6000]
+            body.update(f"[dim]{txt}[/]")
+            _store_plain(body, txt)
         except Exception as e:
             body.update(f"[red]{e}[/]")
+            _store_plain(body, str(e))
 
     @on(Button.Pressed, "#btn-settings-refresh")
     def on_refresh(self) -> None:
@@ -607,6 +734,7 @@ class UpdatePane(Static):
             Button("Docker Update", id="btn-docker-update", variant="success"),
         )
         yield Static("", id="update-docker-body")
+        yield Horizontal(Button("Copy Log", id="btn-update-copy", variant="default"))
         yield Static("", id="update-log")
 
     def on_mount(self) -> None:
@@ -784,6 +912,18 @@ class UpdatePane(Static):
             except Exception as e:
                 log.update(f"[red]{e}[/]")
 
+    @on(Button.Pressed, "#btn-update-copy")
+    def on_copy(self) -> None:
+        try:
+            w = self.query_one("#update-log", Static)
+            plain = getattr(w, "_plain_text", "") or ""
+            if plain:
+                self.app._copy_text(plain)  # type: ignore[attr-defined]
+            else:
+                self.app.notify("Nothing to copy", severity="warning")  # type: ignore[attr-defined]
+        except Exception:
+            pass
+
     @on(Button.Pressed, "#btn-docker-status")
     def on_docker_status(self) -> None:
         self.refresh_docker()
@@ -920,6 +1060,11 @@ class NineRouterTUI(App):
         Binding("q", "quit", "Quit"),
         Binding("r", "refresh", "Refresh"),
         Binding("s", "switch_server", "Switch Server"),
+        # Clipboard: Input handles ctrl+c/v/x natively (OSC 52). App bindings use priority=False
+        # so Input gets first chance; when Input has no selection, App copies detail pane.
+        Binding("ctrl+c", "copy_detail", "Copy", show=False, priority=False),
+        Binding("ctrl+shift+c", "copy_detail", "Copy Detail", show=False, priority=True),
+        Binding("ctrl+a", "select_all_input", "Select All", show=False, priority=True),
         Binding("1", "tab('overview')", "Overview"),
         Binding("2", "tab('providers')", "Providers"),
         Binding("3", "tab('nodes')", "Nodes"),
@@ -934,10 +1079,11 @@ class NineRouterTUI(App):
     def __init__(self, client: Optional[NinerouterClient] = None, **kw):
         super().__init__(**kw)
         self.client = client or NinerouterClient(load_config_from_env_and_file())
+        self._detail_plain: dict[str, str] = {}
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
-        yield Static("[dim]Press 's' to switch server  •  'r' to refresh  •  1-9 tabs  •  q quit[/]", id="hint-bar")
+        yield Static("[dim]Press 's' switch server • 'r' refresh • 1-9 tabs • q quit • Ctrl+Shift+C copy detail • Input: Ctrl+C/V/X copy/paste[/]", id="hint-bar")
         with TabbedContent(initial="overview"):
             with TabPane("Overview", id="overview"):
                 yield OverviewPane(self.client)
@@ -1020,6 +1166,153 @@ class NineRouterTUI(App):
             pane.client = self.client
         self.action_refresh()
         self.notify(f"Switched to {profile.name} — {profile.url}", timeout=3)
+
+    # ── Clipboard helpers ──
+    def _focused_input(self):
+        try:
+            w = self.focused
+            from textual.widgets import Input
+            if isinstance(w, Input):
+                return w
+        except Exception:
+            pass
+        return None
+
+    def _copy_text(self, text: str) -> None:
+        if not text or text.strip() in ("—", ""):
+            self.notify("Nothing to copy", severity="warning", timeout=2)
+            return
+        try:
+            # OSC 52 — works in most terminals (Windows Terminal, WezTerm, kitty, etc.)
+            self.copy_to_clipboard(text)
+            # System clipboard fallback (Windows clip, Linux xclip/xsel, or pyperclip)
+            try:
+                import subprocess, shutil
+                if shutil.which("clip"):
+                    subprocess.run(["clip"], input=text.encode("utf-8"), timeout=2, check=False)
+                elif shutil.which("xclip"):
+                    subprocess.run(["xclip", "-selection", "clipboard"], input=text.encode("utf-8"), timeout=2, check=False)
+                elif shutil.which("xsel"):
+                    subprocess.run(["xsel", "--clipboard", "--input"], input=text.encode("utf-8"), timeout=2, check=False)
+                else:
+                    try:
+                        import pyperclip  # type: ignore
+                        pyperclip.copy(text)
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+            preview = text[:60].replace("\n", " ") + ("…" if len(text) > 60 else "")
+            self.notify(f"Copied: {preview}", timeout=2)
+        except Exception as e:
+            self.notify(f"Copy failed: {e}", severity="error", timeout=2)
+
+    def _set_detail_plain(self, key: str, plain: str) -> None:
+        """Store plain text for a detail pane so copy works without markup parsing."""
+        try:
+            self._detail_plain[key] = plain
+            # also stash on the Static widget for direct access
+            sel_map = {
+                "overview": "#overview-body",
+                "providers": "#providers-detail",
+                "nodes": "#nodes-detail",
+                "combos": "#combos-detail",
+                "models": "#models-detail",
+                "keys": "#keys-detail",
+                "usage": "#usage-detail",
+                "settings": "#settings-body",
+                "update": "#update-log",
+            }
+            sel = sel_map.get(key)
+            if sel:
+                try:
+                    w = self.query_one(sel, Static)
+                    w._plain_text = plain  # type: ignore[attr-defined]
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+    def _get_detail_text(self) -> str:
+        """Get plain text from the active pane's detail Static."""
+        try:
+            tc = self.query_one(TabbedContent)
+            active = tc.active or ""
+            # 1) stored plain text (most reliable)
+            if active in self._detail_plain and self._detail_plain[active]:
+                return self._detail_plain[active]
+            pane_ids = {
+                "overview": "#overview-body",
+                "providers": "#providers-detail",
+                "nodes": "#nodes-detail",
+                "combos": "#combos-detail",
+                "models": "#models-detail",
+                "keys": "#keys-detail",
+                "usage": "#usage-detail",
+                "settings": "#settings-body",
+                "update": "#update-log",
+            }
+            sel = pane_ids.get(active)
+            if sel:
+                w = self.query_one(sel, Static)
+                # 2) widget stashed plain
+                if hasattr(w, "_plain_text") and getattr(w, "_plain_text"):
+                    return str(getattr(w, "_plain_text"))
+                # 3) fallback: try to extract from content/visual
+                for attr in ("_plain_text", "_content", "__content"):
+                    try:
+                        v = getattr(w, attr, "")
+                        if v and str(v).strip() not in ("", "None"):
+                            txt = str(v)
+                            import re
+                            plain = re.sub(r"\[/?[^\]]*\]", "", txt)
+                            if plain.strip():
+                                return plain.strip()
+                    except Exception:
+                        continue
+                try:
+                    txt = str(w.content) if hasattr(w, "content") else ""
+                    if txt and txt.strip() not in ("", "None"):
+                        import re
+                        return re.sub(r"\[/?[^\]]*\]", "", txt).strip()
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        return ""
+
+    def action_copy_detail(self) -> None:
+        """Copy: if Input focused with selection, copy selection; else copy detail pane."""
+        inp = self._focused_input()
+        if inp is not None:
+            try:
+                if inp.selected_text:
+                    inp.action_copy()
+                    self.notify(f"Copied: {inp.selected_text[:60]}", timeout=2)
+                    return
+                # no selection but Input has value — copy whole value
+                if inp.value and inp.has_focus:
+                    self._copy_text(inp.value)
+                    return
+            except Exception:
+                pass
+        txt = self._get_detail_text()
+        if txt:
+            import re
+            plain = re.sub(r"\[/?[^\]]*\]", "", txt)
+            self._copy_text(plain.strip())
+        else:
+            self.notify("Nothing to copy — select a row first", severity="warning", timeout=2)
+
+    def action_select_all_input(self) -> None:
+        inp = self._focused_input()
+        if inp is not None:
+            try:
+                inp.selection = (0, len(inp.value))
+                return
+            except Exception:
+                pass
+        self.notify("Select all: focus an input first", severity="warning", timeout=2)
 
     def on_mount(self) -> None:
         from client import has_any_config

@@ -1,7 +1,9 @@
 # syntax=docker/dockerfile:1.7
 ARG PYTHON_IMAGE=python:3.12-alpine
+ARG VERSION=1.0.0
 
 FROM ${PYTHON_IMAGE} AS base
+ARG VERSION
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
@@ -18,7 +20,8 @@ RUN apk add --no-cache \
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# App
+# App — include VERSION for --version support
+COPY VERSION _version.py ./
 COPY app.py cli.py client.py updater.py ./
 COPY config.toml.example ./
 COPY servers.json.example ./
@@ -39,4 +42,5 @@ CMD ["python", "app.py"]
 LABEL org.opencontainers.image.title="9router-tui" \
       org.opencontainers.image.description="Terminal Dashboard for 9Router (Textual TUI + Rich CLI)" \
       org.opencontainers.image.source="https://github.com/helmiau/9router-tui" \
-      org.opencontainers.image.licenses="MIT"
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.version="${VERSION}"
