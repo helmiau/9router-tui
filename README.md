@@ -357,6 +357,21 @@ docker compose run --rm 9router-tui python cli.py health
 
 **GHCR & Docker Hub:** The workflow at `.github/workflows/docker-publish.yml` builds multi-arch (`linux/amd64`, `linux/arm64`) and pushes to `docker.io/helmiau/9router-tui` & `ghcr.io/helmiau/9router-tui` on push to `main`/`master` or tag `v*`. Requires secrets `DOCKERHUB_USERNAME` + `DOCKERHUB_TOKEN` (Docker Hub) — GHCR uses `GITHUB_TOKEN` automatically.
 
+## System Requirements
+
+| Component | Minimum | Recommended |
+|---|---|---|
+| **OS** | Windows 10 / Ubuntu 20.04 / Debian 11 / macOS 12 | Windows 11 / Ubuntu 22.04+ / Debian 12+ |
+| **CPU** | 1 vCPU (x64 or ARM64) | 2 vCPU+ |
+| **RAM** | 256 MB free (TUI ~60–120 MB) | 512 MB+ free |
+| **Disk** | 150 MB (exe ~40 MB + Python deps) | 500 MB (with backups) |
+| **Python** | 3.10+ (for `python app.py` / `cli.py`) | 3.12+ |
+| **Terminal** | Any with UTF-8 + 80×24 | Windows Terminal / WezTerm / kitty / Alacritty (for OSC 52 clipboard) |
+| **Network** | HTTP to 9Router (`:20128`) | Low latency to 9Router host |
+| **Docker** | Optional — for `helmiau/9router-tui` image | Docker 24+ with Buildx (for multi-arch) |
+
+> **Standalone exe/AppImage:** No Python needed — just double-click. Same RAM/disk as above. AppImage needs `libfuse2` on older distros (`sudo apt install libfuse2`).
+
 ## Project Structure
 
 ```

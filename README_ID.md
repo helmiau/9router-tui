@@ -358,6 +358,21 @@ docker compose run --rm 9router-tui python cli.py health
   README_ID.md        # Indonesia
 ```
 
+## Kebutuhan Sistem Minimum
+
+| Komponen | Minimum | Rekomendasi |
+|---|---|---|
+| **OS** | Windows 10 / Ubuntu 20.04 / Debian 11 / macOS 12 | Windows 11 / Ubuntu 22.04+ / Debian 12+ |
+| **CPU** | 1 vCPU (x64 atau ARM64) | 2 vCPU+ |
+| **RAM** | 256 MB kosong (TUI ~60–120 MB) | 512 MB+ kosong |
+| **Disk** | 150 MB (exe ~40 MB + deps Python) | 500 MB (dengan backup) |
+| **Python** | 3.10+ (untuk `python app.py` / `cli.py`) | 3.12+ |
+| **Terminal** | Mendukung UTF-8 + 80×24 | Windows Terminal / WezTerm / kitty / Alacritty (untuk clipboard OSC 52) |
+| **Jaringan** | HTTP ke 9Router (`:20128`) | Latensi rendah ke host 9Router |
+| **Docker** | Opsional — untuk image `helmiau/9router-tui` | Docker 24+ dengan Buildx (untuk multi-arch) |
+
+> **Exe/AppImage standalone:** Tidak butuh Python — cukup double-click. Kebutuhan RAM/disk sama. AppImage butuh `libfuse2` di distro lama (`sudo apt install libfuse2`).
+
 ## Lisensi
 
 Standalone, tidak ada ketergantungan ke `omnexsync`. Ikuti lisensi `9router-master` (MIT).
