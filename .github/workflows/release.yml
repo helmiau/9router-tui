@@ -126,11 +126,11 @@ jobs:
         run: |
           if [ -n "${{ inputs.version }}" ]; then
             VER="${{ inputs.version }}"
-          else
+          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
             VER="${GITHUB_REF#refs/tags/v}"
+          else
+            VER="$(cat VERSION | tr -d ' \n\r')"
           fi
-          # fallback to VERSION file if still empty
-          if [ -z "$VER" ]; then VER="$(cat VERSION | tr -d ' \n\r')"; fi
           echo "version=$VER" >> "$GITHUB_OUTPUT"
           echo "Version: $VER"
 
