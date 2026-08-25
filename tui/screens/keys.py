@@ -94,125 +94,54 @@ class KeyShowScreen(ModalScreen):
     def on_close(self) -> None:
         self.dismiss(None)
 
-
-class ProxyPoolsPane(Static):
-    def __init__(self, client, **kw):
+class KeyEditScreen(ModalScreen):
+    DEFAULT_CSS = """
+    KeyEditScreen { align: center middle; }
+    #key-edit-container { width: 60; height: auto; background: $surface; border: thick $primary; padding: 1 2; }
+    #key-edit-title { text-style: bold; color: $primary; margin-bottom: 1; }
+    #key-edit-status { height: auto; margin: 1 0; }
+    """
+    def __init__(self, client, rec, callback, **kw):
         super().__init__(**kw)
-        self.client = client
-        self._data = []
-    def compose(self) -> ComposeResult:
-        yield Label("Proxy Pools — GET /api/proxy-pools", id="pools-title")
-        yield Horizontal(Button("Refresh", id="btn-pools-refresh", variant="primary"))
-        yield DataTable(id="table-pools", cursor_type="row", zebra_stripes=True)
-        yield Static("", id="pools-detail")
-        yield Horizontal(Button("Copy Detail", id="btn-pools-copy", variant="default"))
-    def on_mount(self) -> None:
-        table = self.query_one("#table-pools", DataTable)
-        table.add_columns("Name", "Type", "Proxy URL", "Active", "ID")
-        self.refresh_data()
-    @work(exclusive=True)
-    async def refresh_data(self) -> None:
-        table = self.query_one("#table-pools", DataTable)
-        table.clear()
-        self._data = []
+        self._client = client
+        self._rec = rec
+        self._cb = callback
+    def compose(self):
+        from textual.containers import Vertical, Horizontal
+        from textual.widgets import Label, Static, Input, Button, Checkbox
+        rec = self._rec or {}
+        with Vertical(id="key-edit-container"):
+            yield Label(f"Edit Key — {rec.get('name','')}", id="key-edit-title")
+            yield Input(value=rec.get("name",""), placeholder="Name", id="key-edit-name")
+            yield Checkbox(value=bool(rec.get("isActive", True)), label="Active", id="key-edit-active")
+            yield Static("", id="key-edit-status")
+            with Horizontal():
+                yield Button("Save", id="btn-key-edit-save", variant="primary")
+                yield Button("Cancel", id="btn-key-edit-cancel", variant="default")
+    @on(Button.Pressed, "#btn-key-edit-save")
+    def on_save(self) -> None:
         try:
-            data = await asyncio.to_thread(self.client.list_proxy_pools)
-            self._data = data if isinstance(data, list) else []
-            for p in self._data:
-                table.add_row(p.get("name","—")[:20], p.get("type","—"), p.get("proxyUrl","—")[:40], "✓" if p.get("isActive") else "✗", p.get("id","")[:8])
-            w = self.query_one("#pools-detail", Static)
-            txt = f"{len(self._data)} pools"
-            w.update(f"[dim]{txt}[/]")
-            _store_plain(w, txt)
+            name = self.query_one("#key-edit-name", Input).value.strip()
+            is_active = self.query_one("#key-edit-active", Checkbox).value
+            if not name:
+                self.query_one("#key-edit-status", Static).update("[red]Name is required[/]")
+                return
+            import asyncio as _aio
+            async def _do():
+                try:
+                    await _aio.to_thread(self._client.update_key, self._rec["id"], {"name": name, "isActive": is_active})
+                    self.app.notify("Saved", timeout=2)
+                    self.dismiss(True)
+                    self._cb(True)
+                except Exception as e:
+                    self.query_one("#key-edit-status", Static).update(f"[red]{e}[/]")
+            _aio.create_task(_do())
         except Exception as e:
-            w = self.query_one("#pools-detail", Static)
-            w.update(f"[red]{e}[/]")
-            _store_plain(w, str(e))
-    @on(Button.Pressed, "#btn-pools-refresh")
-    def on_refresh(self) -> None:
-        self.refresh_data()
-    @on(Button.Pressed, "#btn-pools-copy")
-    def on_copy(self) -> None:
-        try:
-            w = self.query_one("#pools-detail", Static)
-            plain = getattr(w, "_plain_text", "") or ""
-            if plain:
-                self.app._copy_text(plain)  # type: ignore[attr-defined]
-            else:
-                self.app.notify("Nothing to copy — select a row first", severity="warning")  # type: ignore[attr-defined]
-        except Exception:
-            pass
-    @on(DataTable.RowSelected, "#table-pools")
-    def on_row_selected(self, event: DataTable.RowSelected) -> None:
-        try:
-            idx = event.cursor_row
-            rec = self._data[idx] if 0 <= idx < len(self._data) else None
-            if rec:
-                txt = f"{rec.get('name')}  type={rec.get('type')}  id={rec.get('id')}\n{json.dumps(rec, indent=2, ensure_ascii=False)[:2000]}"
-                w = self.query_one("#pools-detail", Static)
-                w.update(f"[bold]{rec.get('name')}[/]  type={rec.get('type')}  id={rec.get('id')}\n[dim]{json.dumps(rec, indent=2, ensure_ascii=False)[:2000]}[/]")
-                _store_plain(w, txt)
-        except Exception:
-            pass
-
-
-class LogsPane(Static):
-    def __init__(self, client, **kw):
-        super().__init__(**kw)
-        self.client = client
-        self._data = []
-    def compose(self) -> ComposeResult:
-        yield Label("Request Logs — GET /api/usage/logs", id="logs-title")
-        yield Horizontal(Button("Refresh", id="btn-logs-refresh", variant="primary"))
-        yield DataTable(id="table-logs", cursor_type="row", zebra_stripes=True)
-        yield Static("", id="logs-detail")
-        yield Horizontal(Button("Copy Detail", id="btn-logs-copy", variant="default"))
-    def on_mount(self) -> None:
-        table = self.query_one("#table-logs", DataTable)
-        table.add_columns("Time", "Model", "Provider", "Status", "ID")
-        self.refresh_data()
-    @work(exclusive=True)
-    async def refresh_data(self) -> None:
-        table = self.query_one("#table-logs", DataTable)
-        table.clear()
-        self._data = []
-        try:
-            data = await asyncio.to_thread(self.client.get_request_logs, 100)
-            items = data if isinstance(data, list) else data.get("logs", data.get("data", [])) if isinstance(data, dict) else []
-            self._data = items if isinstance(items, list) else []
-            for r in self._data[:100]:
-                table.add_row(fmt_time(r.get("createdAt", r.get("timestamp",""))), r.get("model","—")[:20], r.get("provider","—")[:16], str(r.get("status","—")), r.get("id","")[:8])
-            w = self.query_one("#logs-detail", Static)
-            txt = f"{len(self._data)} logs"
-            w.update(f"[dim]{txt}[/]")
-            _store_plain(w, txt)
-        except Exception as e:
-            w = self.query_one("#logs-detail", Static)
-            w.update(f"[red]{e}[/]")
-            _store_plain(w, str(e))
-    @on(Button.Pressed, "#btn-logs-refresh")
-    def on_refresh(self) -> None:
-        self.refresh_data()
-    @on(Button.Pressed, "#btn-logs-copy")
-    def on_copy(self) -> None:
-        try:
-            w = self.query_one("#logs-detail", Static)
-            plain = getattr(w, "_plain_text", "") or ""
-            if plain:
-                self.app._copy_text(plain)  # type: ignore[attr-defined]
-            else:
-                self.app.notify("Nothing to copy — select a row first", severity="warning")  # type: ignore[attr-defined]
-        except Exception:
-            pass
-    @on(DataTable.RowSelected, "#table-logs")
-    def on_row_selected(self, event: DataTable.RowSelected) -> None:
-        try:
-            idx = event.cursor_row
-            rec = self._data[idx] if 0 <= idx < len(self._data) else None
-            if rec:
-                txt = f"{rec.get('id')}  {rec.get('model')}  {rec.get('provider')}\n{json.dumps(rec, indent=2, ensure_ascii=False)[:3000]}"
-                w = self.query_one("#logs-detail", Static)
-                w.update(f"[bold]{rec.get('id')}[/]  {rec.get('model')}  {rec.get('provider')}\n[dim]{json.dumps(rec, indent=2, ensure_ascii=False)[:3000]}[/]")
-                _store_plain(w, txt)
-        except Exception:
-            pass
+            try:
+                self.query_one("#key-edit-status", Static).update(f"[red]{e}[/]")
+            except Exception:
+                pass
+    @on(Button.Pressed, "#btn-key-edit-cancel")
+    def on_cancel(self) -> None:
+        self.dismiss(False)
+        self._cb(False)

@@ -1,5 +1,6 @@
 [
   {
+    "_comment": "Alternative to config.toml [[servers]] — use ONE, not both. servers.json takes precedence if both exist. TUI auto-logins to first entry (or matching [server] URL).",
     "name": "Local",
     "url": "http://localhost:20128",
     "api_key": "",

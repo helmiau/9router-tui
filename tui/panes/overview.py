@@ -67,7 +67,11 @@ class OverviewPane(Static):
             body.update(plain)
             _store_plain(body, plain)
         except Exception as e:
-            err = f"Error: {e}\nCheck NINEROUTER_URL and NINEROUTER_KEY"
+            msg = str(e)
+            if "401" in msg or "Unauthorized" in msg:
+                err = f"Error: {e}\n[red]401 Unauthorized — check password in config.toml [server] or Settings → TUI Config[/]\n[dim]Try: Settings → TUI Config → set password, or press 's' to switch server[/]"
+            else:
+                err = f"Error: {e}\nCheck NINEROUTER_URL and NINEROUTER_KEY"
             body.update(f"[red]{err}[/]")
             _store_plain(body, err)
 

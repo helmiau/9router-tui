@@ -54,9 +54,17 @@ class SettingsPane(Static):
                 yield Button("Cancel", id="btn-settings-editor-cancel", variant="default")
                 yield Button("Raw JSON", id="btn-settings-raw", variant="default")
             yield Static("", id="settings-editor-status")
+        # ── TUI Config (local) ──
+        yield Label("TUI Config — Local settings (config.toml / servers.json)", id="tui-config-title")
+        yield Static("", id="tui-config-body")
+        yield Horizontal(
+            Button("Edit TUI Config", id="btn-tui-config-edit", variant="default"),
+            Button("Manage Servers", id="btn-tui-servers", variant="default"),
+        )
 
     def on_mount(self) -> None:
         self.refresh_data()
+        self.call_later(self._refresh_tui_config)
 
     @work(exclusive=True)
     async def refresh_data(self) -> None:
@@ -182,3 +190,63 @@ class SettingsPane(Static):
         self._render_editor_fields()
         self._set_editor_visible(True)
         self.notify(f"Staged {len(patch)} change(s) from Raw JSON", timeout=3)
+
+    # ── TUI Config ──
+    def _refresh_tui_config(self) -> None:
+        try:
+            from client import _get_app_dir, _load_servers_from_file
+            import pathlib
+            cfg_path = pathlib.Path(_get_app_dir()) / "config.toml"
+            lines: List[str] = []
+            # [server]
+            if cfg_path.exists():
+                try:
+                    import tomllib
+                    with open(cfg_path, "rb") as f:
+                        data = tomllib.load(f)
+                except ImportError:
+                    import tomli as tomllib  # type: ignore
+                    with open(cfg_path, "rb") as f:
+                        data = tomllib.load(f)
+                srv = data.get("server", {})
+                ui = data.get("ui", {})
+                lines.append(f"[bold][server][/] url={srv.get('url','—')}  api_key={'***' if srv.get('api_key') else '—'}  password={'***' if srv.get('password') else '—'}  timeout={srv.get('timeout','—')}")
+                lines.append(f"[bold][ui][/] auto_login={ui.get('auto_login', True)}  theme={ui.get('theme','—')}  default_page={ui.get('default_page','—')}")
+                disp = data.get("display", {})
+                if disp:
+                    lines.append(f"[bold][display][/] show_secrets={disp.get('show_secrets','—')}  page_size={disp.get('page_size','—')}")
+            else:
+                lines.append("[dim]config.toml not found — using defaults[/]")
+            servers = _load_servers_from_file()
+            if servers:
+                lines.append(f"[bold]Servers:[/] {len(servers)} profile(s)")
+                for s in servers:
+                    lines.append(f"  [cyan]{s.name}[/] {s.url}  [dim]{s.description}[/]")
+            else:
+                lines.append("[dim]No servers in servers.json / [[servers]][/]")
+            self.query_one("#tui-config-body", Static).update("\n".join(lines))
+        except Exception as e:
+            try:
+                self.query_one("#tui-config-body", Static).update(f"[red]{e}[/]")
+            except Exception:
+                pass
+
+    @on(Button.Pressed, "#btn-tui-config-edit")
+    def on_tui_config_edit(self) -> None:
+        from tui.screens.tui_config import TuiConfigScreen
+        self.app.push_screen(TuiConfigScreen(self._on_tui_config_done))
+
+    def _on_tui_config_done(self, ok: bool) -> None:
+        if ok:
+            self._refresh_tui_config()
+            self.notify("TUI config saved — restart or switch server to apply", timeout=3)
+
+    @on(Button.Pressed, "#btn-tui-servers")
+    def on_tui_servers(self) -> None:
+        from tui.screens.tui_servers import TuiServersScreen
+        self.app.push_screen(TuiServersScreen(self._on_tui_servers_done))
+
+    def _on_tui_servers_done(self, ok: bool) -> None:
+        if ok:
+            self._refresh_tui_config()
+            self.notify("Servers saved", timeout=2)

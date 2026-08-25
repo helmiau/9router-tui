@@ -325,8 +325,105 @@ class NineRouterTUI(App):
 
     def on_mount(self) -> None:
         from client import has_any_config
+        # Check if auto-login is enabled in config.toml [ui] auto_login
+        auto_login = True
+        try:
+            from client import _get_app_dir
+            import pathlib
+            cfg_path = pathlib.Path(_get_app_dir()) / "config.toml"
+            if cfg_path.exists():
+                try:
+                    import tomllib
+                    with open(cfg_path, "rb") as f:
+                        data = tomllib.load(f)
+                except ImportError:
+                    import tomli as tomllib  # type: ignore
+                    with open(cfg_path, "rb") as f:
+                        data = tomllib.load(f)
+                auto_login = data.get("ui", {}).get("auto_login", True)
+                if isinstance(auto_login, str):
+                    auto_login = auto_login.lower() not in ("false", "0", "no", "off")
+        except Exception:
+            pass
+        if auto_login:
+            self._try_auto_login()
         if not has_any_config():
             self.call_later(lambda: self.push_screen(ServerPickerScreen(self.client, self._on_server_picked)))
+
+    def _try_auto_login(self) -> bool:
+        """Try to auto-login to default server. Returns True if succeeded."""
+        try:
+            from client import _load_servers_from_file, NinerouterConfig, NinerouterClient
+            servers = _load_servers_from_file()
+            if not servers:
+                return False
+            default_profile = None
+            for s in servers:
+                if s.url.rstrip("/") == self.client.base.rstrip("/"):
+                    default_profile = s
+                    break
+            if not default_profile:
+                default_profile = servers[0]
+            if not default_profile:
+                return False
+            cfg = NinerouterConfig(url=default_profile.url, api_key=default_profile.api_key, timeout=default_profile.timeout)
+            try:
+                from client import _get_app_dir
+                import pathlib
+                cfg_path = pathlib.Path(_get_app_dir()) / "config.toml"
+                if cfg_path.exists():
+                    try:
+                        import tomllib
+                        with open(cfg_path, "rb") as f:
+                            data = tomllib.load(f)
+                    except ImportError:
+                        import tomli as tomllib  # type: ignore
+                        with open(cfg_path, "rb") as f:
+                            data = tomllib.load(f)
+                    srv = data.get("server", {})
+                    if srv.get("password"):
+                        cfg.password = srv["password"]
+            except Exception:
+                pass
+            self.client = NinerouterClient(cfg)
+            self.sub_title = f"{default_profile.name} — {default_profile.url}"
+            from tui.panes.overview import OverviewPane
+            from tui.panes.providers import ProvidersPane
+            from tui.panes.nodes import NodesPane
+            from tui.panes.combos import CombosPane
+            from tui.panes.models import ModelsPane
+            from tui.panes.keys import KeysPane
+            from tui.panes.usage import UsagePane
+            from tui.panes.settings import SettingsPane
+            from tui.panes.pools import ProxyPoolsPane
+            from tui.panes.logs import LogsPane
+            from tui.panes.update import UpdatePane
+            for pane in self.query(OverviewPane):
+                pane.client = self.client
+            for pane in self.query(ProvidersPane):
+                pane.client = self.client
+            for pane in self.query(NodesPane):
+                pane.client = self.client
+            for pane in self.query(CombosPane):
+                pane.client = self.client
+            for pane in self.query(ModelsPane):
+                pane.client = self.client
+            for pane in self.query(KeysPane):
+                pane.client = self.client
+            for pane in self.query(UsagePane):
+                pane.client = self.client
+            for pane in self.query(SettingsPane):
+                pane.client = self.client
+            for pane in self.query(ProxyPoolsPane):
+                pane.client = self.client
+            for pane in self.query(LogsPane):
+                pane.client = self.client
+            for pane in self.query(UpdatePane):
+                pane.client = self.client
+            self.notify(f"Auto-login: {default_profile.name} — {default_profile.url}", timeout=2)
+            return True
+        except Exception:
+            return False
 
 
 # ── Server Picker (Modal) ──

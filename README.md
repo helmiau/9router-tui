@@ -9,27 +9,56 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.2.0-blue" alt="Version" />
+  <img src="https://img.shields.io/badge/version-1.2.5-blue" alt="Version" />
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey" alt="Platform" />
   <img src="https://img.shields.io/badge/python-3.10%2B-blue" alt="Python" />
 </p>
 
-Terminal UI for **9Router** (`9router-master` v0.5.55) — **no dependency on `omnexsync`**. Standalone, only needs `NINEROUTER_URL` + `NINEROUTER_KEY`.
+Standalone Terminal UI for **9Router** (`9router-master` v0.5.55) — **fully independent, no `omnexsync` or other external dependencies**. Only needs `NINEROUTER_URL` + `NINEROUTER_KEY` to connect to a running 9Router instance.
 
-Mirrors the official web dashboard (`http://localhost:20128/dashboard`) in the terminal: health, providers, nodes, combos, models, keys, usage, settings — all via the same REST API `src/app/api/*`.
+Mirrors the official web dashboard (`http://localhost:20128/dashboard`) in the terminal: health, providers, nodes, combos, models, keys, usage, settings — all via the same REST API `src/app/api/*`. This project is a separate, self-contained TUI — it does not import, bundle, or require `omnexsync`.
+
+## Screenshots
+
+<div align="center">
+
+<table>
+<tr>
+<td align="center"><b>Overview</b><br><img src="docs/screenshots/overview.png" width="320" alt="Overview" /></td>
+<td align="center"><b>Providers</b><br><img src="docs/screenshots/providers-main.png" width="320" alt="Providers" /></td>
+<td align="center"><b>Nodes</b><br><img src="docs/screenshots/nodes-main.png" width="320" alt="Nodes" /></td>
+</tr>
+<tr>
+<td align="center"><b>Nodes — Edit</b><br><img src="docs/screenshots/nodes-edit.png" width="320" alt="Nodes Edit" /></td>
+<td align="center"><b>Nodes — Edit UID</b><br><img src="docs/screenshots/nodes-edit-uid.png" width="320" alt="Nodes Edit UID" /></td>
+<td align="center"><b>Combos</b><br><img src="docs/screenshots/combos-main.png" width="320" alt="Combos" /></td>
+</tr>
+<tr>
+<td align="center"><b>Models</b><br><img src="docs/screenshots/models-main.png" width="320" alt="Models" /></td>
+<td align="center"><b>Keys</b><br><img src="docs/screenshots/keys-main.png" width="320" alt="Keys" /></td>
+<td align="center"><b>Usage</b><br><img src="docs/screenshots/usage-main.png" width="320" alt="Usage" /></td>
+</tr>
+<tr>
+<td align="center"><b>Usage — Days</b><br><img src="docs/screenshots/usage-list-days.png" width="320" alt="Usage Days" /></td>
+<td align="center"><b>Updater</b><br><img src="docs/screenshots/updater-main.png" width="320" alt="Updater" /></td>
+<td align="center"><b>More…</b><br><em>11 tabs + modals</em></td>
+</tr>
+</table>
+
+</div>
 
 ## Features
 
 | Page | API | Description |
 |---|---|---|
 | **Overview** | `GET /api/health`, `GET /api/settings`, `GET /api/version`, `GET /api/provider-nodes`, `GET /api/providers`, `GET /api/combos` | Health, version, providers/nodes/combos summary, test all |
-| **Providers** | `GET /api/providers`, `POST /api/providers/test-batch`, `DELETE /api/providers/:id` | Connections table, filter, detail, test batch, delete |
-| **Nodes** | `GET /api/provider-nodes`, `POST/PUT/DELETE /api/provider-nodes` | Nodes table, filter, detail, Add/Edit/Delete, **Edit UID** (custom suffix like `cutad`, `hcnsec`) |
-| **Combos** | `GET /api/combos`, `POST/PUT/DELETE /api/combos` | Combos table, detail, Add/Edit/Delete |
+| **Providers** | `GET /api/providers`, `POST /api/providers/test-batch`, `PUT/DELETE /api/providers/:id` | Connections table, filter, detail, test batch, test selected, toggle active, delete |
+| **Nodes** | `GET /api/provider-nodes`, `POST/PUT/DELETE /api/provider-nodes` | Nodes table, filter, detail, Add/Edit/Delete, **Edit UID** (combined in Edit, custom suffix like `cutad`, `hcnsec`) |
+| **Combos** | `GET /api/combos`, `POST/PUT/DELETE /api/combos` | Combos table, detail, Add/Edit/Delete, model selector with filter |
 | **Models** | `GET /api/models`, `GET /v1/models` | Models table, filter |
-| **Keys** | `GET /api/keys`, `POST/DELETE /api/keys` | Dashboard keys table, Create/Delete, masked |
+| **Keys** | `GET /api/keys`, `POST/PUT/DELETE /api/keys` | Dashboard keys table, Create/Edit/Delete, toggle active, masked |
 | **Usage** | `GET /api/usage/stats`, `GET /api/usage/history` | Stats per period, history table |
-| **Settings** | `GET /api/settings`, `PATCH /api/settings` | View + multi-config editor (form + Raw JSON) |
+| **Settings** | `GET /api/settings`, `PATCH /api/settings` | View + multi-config editor (form + Raw JSON), **TUI Config** (auto_login, theme, etc.), **Manage Servers** (add/edit/delete/reorder) |
 | **Pools** | `GET /api/proxy-pools` | Proxy pools table, detail |
 | **Logs** | `GET /api/usage/logs` | Request logs table, detail |
 | **Update** | `GET /api/version` + npm registry, `updater.py` | Version check, update (npm/source/docker — local & remote via SSH), Docker status/logs/pull/restart, **Backup/Restore** (`data.sqlite` + history) |
@@ -403,4 +432,4 @@ docker compose run --rm 9router-tui python cli.py health
 
 ## License
 
-Standalone, no dependency on `omnexsync`. Follows the `9router-master` license (MIT).
+Standalone and independent — no dependency on `omnexsync` or any other external project. Follows the `9router-master` license (MIT).

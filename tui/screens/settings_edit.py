@@ -11,7 +11,22 @@ from textual.screen import ModalScreen
 from textual.widgets import Button, DataTable, Input, Label, Static, Select, TextArea
 
 from client import NinerouterClient
-# SettingsPane.EDITABLE_FIELDS is imported lazily to avoid circular
+
+try:
+    from tui.panes.settings import SettingsPane as _SettingsPane
+    EDITABLE_FIELDS = _SettingsPane.EDITABLE_FIELDS
+except Exception:
+    EDITABLE_FIELDS = [
+        ("requireApiKey", "bool", "Require API Key"),
+        ("tunnelEnabled", "bool", "Tunnel Enabled"),
+        ("tunnelUrl", "str", "Tunnel URL"),
+        ("logLevel", "select:debug,info,warn,error", "Log Level"),
+        ("defaultModel", "str", "Default Model"),
+        ("maxRetries", "int", "Max Retries"),
+        ("requestTimeout", "int", "Request Timeout (ms)"),
+        ("enableProxy", "bool", "Enable Proxy"),
+        ("proxyUrl", "str", "Proxy URL"),
+    ]
 
 class SettingsEditScreen(ModalScreen):
     """Form to edit multiple settings at once. Returns dict patch or None."""
@@ -40,7 +55,7 @@ class SettingsEditScreen(ModalScreen):
     def compose(self):
         from textual.containers import Vertical, Horizontal
         from textual.widgets import Label, Static, Input, Button, Select
-        fields = SettingsPane.EDITABLE_FIELDS
+        fields = EDITABLE_FIELDS
         with Vertical(id="edit-container"):
             yield Label("Edit Settings — change values, then Apply", id="edit-title")
             with VerticalScroll(id="edit-fields"):
@@ -71,7 +86,7 @@ class SettingsEditScreen(ModalScreen):
     @on(Button.Pressed, "#btn-edit-apply")
     def on_apply(self) -> None:
         patch: Dict[str, Any] = {}
-        for key, kind, _label in SettingsPane.EDITABLE_FIELDS:
+        for key, kind, _label in EDITABLE_FIELDS:
             try:
                 w = self.query_one(f"#edit-{key}")
                 raw_val = None

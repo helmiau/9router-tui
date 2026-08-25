@@ -28,12 +28,14 @@ class KeysPane(Static):
         yield Static("", id="keys-detail")
         yield Horizontal(
             Button("Copy Detail", id="btn-keys-copy", variant="default"),
+            Button("Edit", id="btn-keys-edit", variant="default"),
+            Button("Toggle Active", id="btn-keys-toggle", variant="default"),
             Button("Delete", id="btn-keys-delete", variant="error"),
         )
 
     def on_mount(self) -> None:
         table = self.query_one("#table-keys", DataTable)
-        table.add_columns("Name", "Key", "Machine ID", "Created", "ID")
+        table.add_columns("Name", "Key", "Active", "Machine ID", "Created", "ID")
         self.refresh_data()
 
     @work(exclusive=True)
@@ -48,6 +50,7 @@ class KeysPane(Static):
                 table.add_row(
                     k.get("name", "—"),
                     mask_key(k.get("key", "")),
+                    "✓" if k.get("isActive", True) else "✗",
                     k.get("machineId", k.get("machine_id", "—"))[:12],
                     fmt_time(k.get("createdAt", k.get("created_at", ""))),
                     k.get("id", "")[:8],
@@ -107,6 +110,32 @@ class KeysPane(Static):
             except Exception as e:
                 self.app.notify(f"Delete failed: {e}", severity="error", timeout=4)
         _aio.create_task(_del())
+
+    @on(Button.Pressed, "#btn-keys-edit")
+    def on_edit(self) -> None:
+        rec = self._selected_key()
+        if not rec:
+            self.app.notify("Select a key first", severity="warning")
+            return
+        from tui.screens.keys import KeyEditScreen
+        self.app.push_screen(KeyEditScreen(self.client, rec, lambda ok: self.refresh_data() if ok else None))
+
+    @on(Button.Pressed, "#btn-keys-toggle")
+    def on_toggle(self) -> None:
+        rec = self._selected_key()
+        if not rec:
+            self.app.notify("Select a key first", severity="warning")
+            return
+        new_val = not rec.get("isActive", True)
+        import asyncio as _aio
+        async def _do():
+            try:
+                await _aio.to_thread(self.client.update_key, rec["id"], {"isActive": new_val})
+                self.app.notify(f"{'Enabled' if new_val else 'Disabled'} {rec.get('name')}", timeout=2)
+                self.refresh_data()
+            except Exception as e:
+                self.app.notify(f"Toggle failed: {e}", severity="error", timeout=4)
+        _aio.create_task(_do())
 
     @on(Button.Pressed, "#btn-keys-copy")
     def on_copy(self) -> None:

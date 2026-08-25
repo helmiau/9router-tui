@@ -29,6 +29,8 @@ class ProvidersPane(Static):
         yield Static("", id="providers-detail")
         yield Horizontal(
             Button("Copy Detail", id="btn-providers-copy", variant="default"),
+            Button("Test Selected", id="btn-providers-test-one", variant="default"),
+            Button("Toggle Active", id="btn-providers-toggle", variant="default"),
             Button("Delete", id="btn-providers-delete", variant="error"),
         )
 
@@ -124,6 +126,43 @@ class ProvidersPane(Static):
                 _store_plain(w, txt)
         except Exception:
             pass
+
+    @on(Button.Pressed, "#btn-providers-test-one")
+    def on_test_one(self) -> None:
+        rec = self._selected_provider()
+        if not rec:
+            self.app.notify("Select a provider first", severity="warning")
+            return
+        detail = self.query_one("#providers-detail", Static)
+        detail.update(f"Testing {rec.get('name')}...")
+        import asyncio as _aio
+        async def _do():
+            try:
+                res = await _aio.to_thread(self.client.test_providers, "provider", rec.get("id"))
+                txt = json.dumps(res, indent=2, ensure_ascii=False)[:2000]
+                detail.update(f"[green]Test {rec.get('name')}:[/] {txt}")
+                _store_plain(detail, txt)
+            except Exception as e:
+                detail.update(f"[red]Test failed: {e}[/]")
+                _store_plain(detail, str(e))
+        _aio.create_task(_do())
+
+    @on(Button.Pressed, "#btn-providers-toggle")
+    def on_toggle(self) -> None:
+        rec = self._selected_provider()
+        if not rec:
+            self.app.notify("Select a provider first", severity="warning")
+            return
+        new_val = not rec.get("isActive")
+        import asyncio as _aio
+        async def _do():
+            try:
+                await _aio.to_thread(self.client.update_provider, rec["id"], {"isActive": new_val})
+                self.app.notify(f"{'Enabled' if new_val else 'Disabled'} {rec.get('name')}", timeout=2)
+                self.refresh_data()
+            except Exception as e:
+                self.app.notify(f"Toggle failed: {e}", severity="error", timeout=4)
+        _aio.create_task(_do())
 
     @on(Button.Pressed, "#btn-providers-delete")
     def on_delete(self) -> None:

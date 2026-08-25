@@ -27,10 +27,25 @@ class ComboEditScreen(ModalScreen):
         self._cb = callback
     def compose(self):
         from textual.containers import Vertical, Horizontal
-        from textual.widgets import Label, Static, Input, Button
+        from textual.widgets import Label, Static, Input, Button, Checkbox, DataTable
         is_edit = self._rec is not None
         rec = self._rec or {}
         models_val = ", ".join(rec.get("models", [])) if rec.get("models") else ""
+        # Fetch available models for selector
+        available: list[str] = []
+        try:
+            import asyncio as _aio
+            # Try to get models synchronously if client has them cached, else fetch
+            data = self._client.list_models() if hasattr(self._client, "list_models") else {}
+            models_data = data.get("models", []) if isinstance(data, dict) else data if isinstance(data, list) else []
+            for m in models_data[:200]:
+                mid = m.get("model", m.get("id", ""))
+                if mid:
+                    available.append(mid)
+        except Exception:
+            pass
+        self._available_models = available
+        self._selected_models = set(rec.get("models", []))
         with Vertical(id="combo-edit-container"):
             yield Label("Edit Combo" if is_edit else "Add Combo", id="combo-edit-title")
             with Vertical(id="combo-edit-fields"):
@@ -38,12 +53,57 @@ class ComboEditScreen(ModalScreen):
                 yield Input(value=rec.get("name", ""), placeholder="e.g. my-combo", id="combo-name")
                 yield Label("Kind (optional)")
                 yield Input(value=rec.get("kind", "") or "", placeholder="kind", id="combo-kind")
-                yield Label("Models (comma-separated, e.g. openai/gpt-4o, anthropic/claude-sonnet-4)")
+                yield Label("Filter models")
+                yield Input(placeholder="Filter (e.g. gpt, claude)...", id="combo-filter")
+                yield Label("Available models (check to add)")
+                yield DataTable(id="combo-models-table", cursor_type="row", zebra_stripes=True)
+                yield Label("Selected models (comma-separated, also editable)")
                 yield Input(value=models_val, placeholder="model1, model2, ...", id="combo-models")
             yield Static("", id="combo-edit-status")
             with Horizontal():
                 yield Button("Save", id="btn-combo-save", variant="primary")
                 yield Button("Cancel", id="btn-combo-cancel", variant="default")
+
+    def on_mount(self) -> None:
+        try:
+            table = self.query_one("#combo-models-table", DataTable)
+            table.add_columns("✓", "Model")
+            self._refresh_models_table("")
+        except Exception:
+            pass
+
+    def _refresh_models_table(self, q: str) -> None:
+        try:
+            table = self.query_one("#combo-models-table", DataTable)
+            table.clear()
+            q = q.lower().strip()
+            for mid in self._available_models:
+                if q and q not in mid.lower():
+                    continue
+                checked = "✓" if mid in self._selected_models else " "
+                table.add_row(checked, mid)
+        except Exception:
+            pass
+
+    @on(Input.Changed, "#combo-filter")
+    def on_filter(self, event: Input.Changed) -> None:
+        self._refresh_models_table(event.value)
+
+    @on(DataTable.RowSelected, "#combo-models-table")
+    def on_row_selected(self, event: DataTable.RowSelected) -> None:
+        try:
+            table = self.query_one("#combo-models-table", DataTable)
+            row = table.get_row_at(event.cursor_row)
+            mid = row[1]
+            if mid in self._selected_models:
+                self._selected_models.remove(mid)
+            else:
+                self._selected_models.add(mid)
+            # Update input
+            self.query_one("#combo-models", Input).value = ", ".join(sorted(self._selected_models))
+            self._refresh_models_table(self.query_one("#combo-filter", Input).value)
+        except Exception:
+            pass
     @on(Button.Pressed, "#btn-combo-save")
     def on_save(self) -> None:
         try:

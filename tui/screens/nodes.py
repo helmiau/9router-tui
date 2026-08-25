@@ -37,13 +37,26 @@ class NodeEditScreen(ModalScreen):
         is_edit = self._rec is not None
         title = "Edit Node" if is_edit else "Add Node"
         rec = self._rec or {}
+        # For edit, show UID suffix field as well (combined Edit + Edit UID)
+        ntype = rec.get("type", "openai-compatible") if rec else "openai-compatible"
+        apitype = rec.get("apiType", rec.get("api_type", "chat")) if rec else "chat"
+        full_id = rec.get("id", "") if rec else ""
+        suffix = extract_uid_suffix(full_id, ntype, apitype) if is_edit and full_id else ""
+        prefix = uid_prefix_for_type(ntype, apitype) if is_edit else ""
         with Vertical(id="node-edit-container"):
             yield Label(title, id="node-edit-title")
+            if is_edit and full_id:
+                yield Static(f"[dim]Current ID: {full_id}[/]", id="node-current-id")
+                yield Static(f"[dim]Prefix: {prefix} (read-only) — edit suffix below to change UID[/]", id="node-prefix-hint")
             with Vertical(id="node-edit-fields"):
                 yield Label("Name")
                 yield Input(value=rec.get("name", ""), placeholder="e.g. CutadAI", id="node-name")
                 yield Label("Prefix (e.g. cutad, hcn, bynara)")
                 yield Input(value=rec.get("prefix", ""), placeholder="prefix", id="node-prefix")
+                if is_edit:
+                    yield Label("UID Suffix (editable — e.g. cutad, hcnsec)")
+                    yield Input(value=suffix, placeholder="suffix", id="node-uid-suffix")
+                    yield Static(f"[dim]Preview: {prefix}{suffix or '…'}[/]", id="node-uid-preview")
                 yield Label("Type")
                 yield Select([("openai-compatible", "openai-compatible"), ("anthropic-compatible", "anthropic-compatible"), ("custom-embedding", "custom-embedding")], value=rec.get("type", "openai-compatible"), id="node-type", allow_blank=False)
                 yield Label("API Type (only for openai-compatible: chat / responses)")
@@ -54,6 +67,18 @@ class NodeEditScreen(ModalScreen):
             with Horizontal():
                 yield Button("Save", id="btn-node-save", variant="primary")
                 yield Button("Cancel", id="btn-node-cancel", variant="default")
+
+    @on(Input.Changed, "#node-uid-suffix")
+    def on_uid_changed(self, event: Input.Changed) -> None:
+        try:
+            ntype = self.query_one("#node-type", Select).value or "openai-compatible"
+            apitype = self.query_one("#node-apitype", Select).value or "chat"
+            prefix = uid_prefix_for_type(ntype, apitype)
+            suffix = event.value.strip()
+            preview = prefix + suffix if suffix else prefix + "…"
+            self.query_one("#node-uid-preview", Static).update(f"[dim]Preview: {preview}[/]")
+        except Exception:
+            pass
 
     @on(Button.Pressed, "#btn-node-save")
     def on_save(self) -> None:
@@ -75,12 +100,48 @@ class NodeEditScreen(ModalScreen):
             payload: Dict[str, Any] = {"name": name, "prefix": prefix, "type": ntype, "baseUrl": base_url}
             if ntype == "openai-compatible":
                 payload["apiType"] = apitype if apitype in ("chat", "responses") else "chat"
-            # async save
+            # Check if UID suffix changed (only for edit)
+            uid_changed = False
+            new_id = None
+            if self._rec:
+                try:
+                    suffix_input = self.query_one("#node-uid-suffix", Input)
+                    new_suffix = suffix_input.value.strip()
+                    old_suffix = extract_uid_suffix(self._rec.get("id", ""), self._rec.get("type", ""), self._rec.get("apiType", self._rec.get("api_type", "")))
+                    if new_suffix and new_suffix != old_suffix:
+                        new_prefix = uid_prefix_for_type(ntype, apitype)
+                        new_id = new_prefix + new_suffix
+                        ok, err = validate_uid(ntype, apitype, new_id)
+                        if not ok:
+                            self.query_one("#node-edit-status", Static).update(f"[red]{err}[/]")
+                            return
+                        uid_changed = True
+                except Exception:
+                    pass
             import asyncio as _aio
             async def _do():
                 try:
                     if self._rec:
                         await _aio.to_thread(self._client.update_node, self._rec["id"], payload)
+                        # Handle UID change after normal update
+                        if uid_changed and new_id and new_id != self._rec["id"]:
+                            try:
+                                payload_with_id = {**payload, "id": new_id}
+                                await _aio.to_thread(self._client.create_node, payload_with_id)
+                                try:
+                                    await _aio.to_thread(self._client.delete_node, self._rec["id"])
+                                except Exception:
+                                    pass
+                                self.app.notify(f"Saved + UID changed to {new_id}", timeout=3)
+                            except Exception as e:
+                                msg = str(e)
+                                if "already exists" in msg.lower() or "duplicate" in msg.lower():
+                                    self.app.notify(f"Saved but UID already exists: {new_id}", severity="warning", timeout=4)
+                                else:
+                                    self.app.notify(f"Saved but UID change failed: {e} — edit backup JSON manually", severity="warning", timeout=5)
+                                self.dismiss(True)
+                                self._cb(True)
+                                return
                     else:
                         await _aio.to_thread(self._client.create_node, payload)
                     self.app.notify("Saved", timeout=2)

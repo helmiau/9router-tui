@@ -30,7 +30,6 @@ class NodesPane(Static):
         yield Horizontal(
             Button("Copy Detail", id="btn-nodes-copy", variant="default"),
             Button("Edit", id="btn-nodes-edit", variant="default"),
-            Button("Edit UID", id="btn-nodes-edit-uid", variant="default"),
             Button("Delete", id="btn-nodes-delete", variant="error"),
         )
 
@@ -128,15 +127,6 @@ class NodesPane(Static):
             self.app.notify("Select a node first", severity="warning")
             return
         self.app.push_screen(NodeEditScreen(self.client, rec, self._on_node_saved))
-
-    @on(Button.Pressed, "#btn-nodes-edit-uid")
-    def on_edit_uid(self) -> None:
-        from tui.screens.nodes import NodeUidEditScreen
-        rec = self._selected_node()
-        if not rec:
-            self.app.notify("Select a node first", severity="warning")
-            return
-        self.app.push_screen(NodeUidEditScreen(self.client, rec, self._on_node_saved))
 
     @on(Button.Pressed, "#btn-nodes-delete")
     def on_delete(self) -> None:

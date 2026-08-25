@@ -72,30 +72,44 @@ class NinerouterClient:
             self.session.headers.update({"Authorization": f"Bearer {cfg.api_key}"})
         # Cookie auth (if password login needed)
         self._cookies: Dict[str, str] = {}
+        # Auto-login if password is set
+        if cfg.password:
+            try:
+                self.login(cfg.password)
+            except Exception:
+                pass
 
     # ── helpers ──
     def _url(self, path: str) -> str:
         return f"{self.base}{path}"
 
-    def _get(self, path: str, **kw) -> requests.Response:
+    def _request_with_relogin(self, method: str, path: str, **kw) -> requests.Response:
+        """Do request, if 401 and password is set, try re-login once."""
         kw.setdefault("timeout", self.cfg.timeout)
-        return self.session.get(self._url(path), cookies=self._cookies, **kw)
+        func = getattr(self.session, method)
+        r = func(self._url(path), cookies=self._cookies, **kw)
+        if r.status_code == 401 and self.cfg.password:
+            try:
+                if self.login(self.cfg.password):
+                    r = func(self._url(path), cookies=self._cookies, **kw)
+            except Exception:
+                pass
+        return r
+
+    def _get(self, path: str, **kw) -> requests.Response:
+        return self._request_with_relogin("get", path, **kw)
 
     def _post(self, path: str, **kw) -> requests.Response:
-        kw.setdefault("timeout", self.cfg.timeout)
-        return self.session.post(self._url(path), cookies=self._cookies, **kw)
+        return self._request_with_relogin("post", path, **kw)
 
     def _put(self, path: str, **kw) -> requests.Response:
-        kw.setdefault("timeout", self.cfg.timeout)
-        return self.session.put(self._url(path), cookies=self._cookies, **kw)
+        return self._request_with_relogin("put", path, **kw)
 
     def _patch(self, path: str, **kw) -> requests.Response:
-        kw.setdefault("timeout", self.cfg.timeout)
-        return self.session.patch(self._url(path), cookies=self._cookies, **kw)
+        return self._request_with_relogin("patch", path, **kw)
 
     def _delete(self, path: str, **kw) -> requests.Response:
-        kw.setdefault("timeout", self.cfg.timeout)
-        return self.session.delete(self._url(path), cookies=self._cookies, **kw)
+        return self._request_with_relogin("delete", path, **kw)
 
     # ── health ──
     def health(self) -> Dict[str, Any]:
@@ -216,6 +230,11 @@ class NinerouterClient:
         r = self._post("/api/keys", json={"name": name})
         r.raise_for_status()
         return r.json()
+
+    def update_key(self, key_id: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+        r = self._put(f"/api/keys/{key_id}", json=payload)
+        r.raise_for_status()
+        return r.json() if r.text else {}
 
     def delete_key(self, key_id: str) -> Dict[str, Any]:
         r = self._delete(f"/api/keys/{key_id}")
@@ -409,6 +428,8 @@ def load_config_from_env_and_file(config_path: Optional[str] = None) -> Ninerout
                 url = server.get("url", "")
             if not api_key:
                 api_key = server.get("api_key", "")
+            if not password:
+                password = server.get("password", "")
             timeout = server.get("timeout", 15)
             return NinerouterConfig(
                 url=url or "http://localhost:20128",

@@ -9,28 +9,59 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.2.0-blue" alt="Version" />
+  <img src="https://img.shields.io/badge/version-1.2.5-blue" alt="Version" />
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey" alt="Platform" />
   <img src="https://img.shields.io/badge/python-3.10%2B-blue" alt="Python" />
 </p>
 
-Terminal UI untuk **9Router** (`9router-master` v0.5.55) — **tidak ada hubungan dengan `omnexsync`**. Standalone, hanya butuh `NINEROUTER_URL` + `NINEROUTER_KEY`.
+Terminal UI standalone untuk **9Router** (`9router-master` v0.5.55) — **sepenuhnya independen, tanpa `omnexsync` atau dependensi eksternal lain**. Hanya butuh `NINEROUTER_URL` + `NINEROUTER_KEY` untuk terhubung ke instance 9Router yang sedang berjalan.
 
-Mencerminkan dashboard web resmi (`http://localhost:20128/dashboard`) di terminal: health, providers, nodes, combos, models, keys, usage, settings — semua via REST API `src/app/api/*` yang sama.
+Mencerminkan dashboard web resmi (`http://localhost:20128/dashboard`) di terminal: health, providers, nodes, combos, models, keys, usage, settings — semua via REST API `src/app/api/*` yang sama. Proyek ini terpisah dan mandiri — tidak mengimpor, membundel, atau membutuhkan `omnexsync`.
+
+## Screenshot
+
+<div align="center">
+
+<table>
+<tr>
+<td align="center"><b>Overview</b><br><img src="docs/screenshots/overview.png" width="320" alt="Overview" /></td>
+<td align="center"><b>Providers</b><br><img src="docs/screenshots/providers-main.png" width="320" alt="Providers" /></td>
+<td align="center"><b>Nodes</b><br><img src="docs/screenshots/nodes-main.png" width="320" alt="Nodes" /></td>
+</tr>
+<tr>
+<td align="center"><b>Nodes — Edit</b><br><img src="docs/screenshots/nodes-edit.png" width="320" alt="Nodes Edit" /></td>
+<td align="center"><b>Nodes — Edit UID</b><br><img src="docs/screenshots/nodes-edit-uid.png" width="320" alt="Nodes Edit UID" /></td>
+<td align="center"><b>Combos</b><br><img src="docs/screenshots/combos-main.png" width="320" alt="Combos" /></td>
+</tr>
+<tr>
+<td align="center"><b>Models</b><br><img src="docs/screenshots/models-main.png" width="320" alt="Models" /></td>
+<td align="center"><b>Keys</b><br><img src="docs/screenshots/keys-main.png" width="320" alt="Keys" /></td>
+<td align="center"><b>Usage</b><br><img src="docs/screenshots/usage-main.png" width="320" alt="Usage" /></td>
+</tr>
+<tr>
+<td align="center"><b>Usage — Days</b><br><img src="docs/screenshots/usage-list-days.png" width="320" alt="Usage Days" /></td>
+<td align="center"><b>Updater</b><br><img src="docs/screenshots/updater-main.png" width="320" alt="Updater" /></td>
+<td align="center"><b>Lainnya…</b><br><em>11 tabs + modals</em></td>
+</tr>
+</table>
+
+</div>
 
 ## Fitur
 
 | Halaman | API | Deskripsi |
 |---|---|---|
 | **Overview** | `GET /api/health`, `GET /api/settings`, `GET /api/version`, `GET /api/provider-nodes`, `GET /api/providers`, `GET /api/combos` | Health, version, ringkasan providers/nodes/combos, test all |
-| **Providers** | `GET /api/providers`, `POST /api/providers/test-batch` | Tabel connections (name, provider, priority, active, status), filter, detail JSON, test batch |
-| **Nodes** | `GET /api/provider-nodes` | Tabel nodes (name, prefix, type, apiType, baseUrl), filter, detail |
-| **Combos** | `GET /api/combos` | Tabel combos (name, kind, models count), detail models |
+| **Providers** | `GET /api/providers`, `POST /api/providers/test-batch`, `PUT/DELETE /api/providers/:id` | Tabel connections, filter, detail, test batch, test selected, toggle active, delete |
+| **Nodes** | `GET /api/provider-nodes`, `POST/PUT/DELETE /api/provider-nodes` | Tabel nodes, filter, detail, Add/Edit/Delete, **Edit UID** (gabung di Edit, suffix custom seperti `cutad`, `hcnsec`) |
+| **Combos** | `GET /api/combos`, `POST/PUT/DELETE /api/combos` | Tabel combos, detail, Add/Edit/Delete, selector model dengan filter |
 | **Models** | `GET /api/models`, `GET /v1/models` | Tabel models (model, provider, alias, caps), filter |
-| **Keys** | `GET /api/keys` | Tabel dashboard keys (name, masked key, machineId) |
-| **Usage** | `GET /api/usage/stats`, `GET /api/usage/history`, `GET /api/usage/chart` | Stats per period (today/24h/7d/30d/all), history table |
-| **Settings** | `GET /api/settings` | Dump JSON settings (providerStrategies, tunnel, dll) |
-| **Update** | `GET /api/version` + npm registry, `updater.py` | Version check, update (npm/source/docker — local & remote via SSH), Docker status/logs/pull/restart (local & VPS) |
+| **Keys** | `GET /api/keys`, `POST/PUT/DELETE /api/keys` | Tabel dashboard keys, Create/Edit/Delete, toggle active, masked |
+| **Usage** | `GET /api/usage/stats`, `GET /api/usage/history` | Stats per period, history table |
+| **Settings** | `GET /api/settings`, `PATCH /api/settings` | View + editor multi-config (form + Raw JSON), **TUI Config** (auto_login, theme, dll), **Manage Servers** (add/edit/delete/reorder) |
+| **Pools** | `GET /api/proxy-pools` | Tabel proxy pools, detail |
+| **Logs** | `GET /api/usage/logs` | Tabel request logs, detail |
+| **Update** | `GET /api/version` + npm registry, `updater.py` | Version check, update (npm/source/docker — local & remote via SSH), Docker status/logs/pull/restart, **Backup/Restore** (`data.sqlite` + history) |
 
 ## Quick Start
 
@@ -375,4 +406,4 @@ docker compose run --rm 9router-tui python cli.py health
 
 ## Lisensi
 
-Standalone, tidak ada ketergantungan ke `omnexsync`. Ikuti lisensi `9router-master` (MIT).
+Standalone dan independen — tanpa ketergantungan ke `omnexsync` atau proyek eksternal lain. Ikuti lisensi `9router-master` (MIT).

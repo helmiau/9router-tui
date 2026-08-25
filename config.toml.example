@@ -6,13 +6,18 @@
 url = "http://localhost:20128"
 # API key for /v1/* and /api/* (if requireApiKey=true)
 api_key = ""
+# Dashboard password (for /api/* cookie auth, if requireLogin=true)
+password = "123456"
 # Timeout in seconds
 timeout = 15
 
 # ── Multiple servers (for TUI picker & CLI) ──
-# Each [[servers]] is a saved profile. TUI shows picker when no config,
+# Each [[servers]] is a saved profile. TUI auto-logins to the first one (or matching [server] URL),
 # and 's' anytime to switch. CLI: servers / server-add / server-use
-# Alternative: use servers.json (same shape, see servers.json.example)
+# NOTE: servers.json and config.toml [[servers]] are alternatives — use ONE, not both.
+#   - servers.json: simpler, pure JSON, easier for scripts/tools to edit
+#   - config.toml [[servers]]: single-file config (server + ui + display), better for manual editing
+#   If both exist, servers.json takes precedence. See servers.json.example
 # [[servers]]
 # name = "Local"
 # url = "http://localhost:20128"
