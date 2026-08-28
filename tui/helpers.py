@@ -115,3 +115,23 @@ def extract_uid_suffix(full_id: str, node_type: str, api_type: str = "") -> str:
     if prefix and full_id.startswith(prefix):
         return full_id[len(prefix):]
     return full_id.split("-")[-1] if "-" in full_id else full_id
+
+# ── Display helper: show only suffix for compatible IDs ──
+_COMPATIBLE_PREFIXES = (
+    "openai-compatible-chat-",
+    "openai-compatible-responses-",
+    "openai-compatible-response-",
+    "anthropic-compatible-",
+    "custom-embedding-",
+)
+
+def display_node_id(full_id: str) -> str:
+    """Return display ID: strip known compatible prefix, keep suffix only.
+    Data stays full; only table rendering uses this."""
+    if not full_id:
+        return "—"
+    for p in _COMPATIBLE_PREFIXES:
+        if full_id.startswith(p):
+            suffix = full_id[len(p):]
+            return suffix if suffix else full_id
+    return full_id

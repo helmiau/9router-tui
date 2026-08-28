@@ -17,6 +17,7 @@ class ProvidersPane(Static):
         super().__init__(**kw)
         self.client = client
         self._data: List[Dict[str, Any]] = []
+        self._filtered: List[Dict[str, Any]] = []
 
     def compose(self) -> ComposeResult:
         yield Label("Providers — Connections (GET /api/providers)", id="providers-title")
@@ -52,15 +53,17 @@ class ProvidersPane(Static):
                     p.get("name", "—")[:24],
                     p.get("provider", "—")[:32],
                     str(p.get("priority", "—")),
-                    "✓" if p.get("isActive") else "✗",
+                    "yes" if p.get("isActive") else "no",
                     p.get("testStatus", p.get("status", "—")),
                     p.get("id", "")[:8],
                 )
+            self._filtered = list(self._data)
             w = self.query_one("#providers-detail", Static)
             txt = f"{len(data)} connections"
             w.update(f"[dim]{txt}[/]")
             _store_plain(w, txt)
         except Exception as e:
+            self._filtered = list(self._data)
             w = self.query_one("#providers-detail", Static)
             w.update(f"[red]{e}[/]")
             _store_plain(w, str(e))
@@ -95,7 +98,7 @@ class ProvidersPane(Static):
                 p.get("name", "—")[:24],
                 p.get("provider", "—")[:32],
                 str(p.get("priority", "—")),
-                "✓" if p.get("isActive") else "✗",
+                "yes" if p.get("isActive") else "no",
                 p.get("testStatus", p.get("status", "—")),
                 p.get("id", "")[:8],
             )
@@ -105,6 +108,10 @@ class ProvidersPane(Static):
             table = self.query_one("#table-providers", DataTable)
             if table.cursor_row is None or table.cursor_row < 0:
                 return None
+            # Use filtered list if filter is active
+            data = self._filtered if self._filtered else self._data
+            if 0 <= table.cursor_row < len(data):
+                return data[table.cursor_row]
             row = table.get_row_at(table.cursor_row)
             short_id = row[-1]
             return next((p for p in self._data if p.get("id","").startswith(short_id)), None)
@@ -115,10 +122,13 @@ class ProvidersPane(Static):
     def on_row_selected(self, event: DataTable.RowSelected) -> None:
         try:
             idx = event.cursor_row
-            table = self.query_one("#table-providers", DataTable)
-            row = table.get_row_at(idx)
-            short_id = row[-1]
-            rec = next((p for p in self._data if p.get("id","").startswith(short_id)), None)
+            data = self._filtered if self._filtered else self._data
+            rec = data[idx] if 0 <= idx < len(data) else None
+            if rec is None:
+                table = self.query_one("#table-providers", DataTable)
+                row = table.get_row_at(idx)
+                short_id = row[-1]
+                rec = next((p for p in self._data if p.get("id","").startswith(short_id)), None)
             if rec:
                 txt = f"{rec.get('name')}  provider={rec.get('provider')}  id={rec.get('id')}\n{json.dumps(rec, indent=2, ensure_ascii=False)[:2000]}"
                 w = self.query_one("#providers-detail", Static)
@@ -190,6 +200,7 @@ class ProvidersPane(Static):
     @on(Button.Pressed, "#btn-providers-copy")
     def on_copy(self) -> None:
         try:
+            self._filtered = list(self._data)
             w = self.query_one("#providers-detail", Static)
             plain = getattr(w, "_plain_text", "") or ""
             if plain:

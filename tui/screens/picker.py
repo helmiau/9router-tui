@@ -57,6 +57,7 @@ class ServerPickerScreen(ModalScreen):
                 yield Input(placeholder="SSH key path (e.g. ~/.ssh/id_rsa)", id="input-ssh-key")
                 yield Input(placeholder="Compose path (e.g. /opt/9router/docker-compose.yml)", id="input-compose-path")
             with Horizontal():
+                yield Button("OK", id="btn-picker-ok", variant="primary")
                 yield Button("Connect", id="btn-picker-connect", variant="primary")
                 yield Button("Save & Connect", id="btn-picker-save", variant="default")
                 yield Button("Cancel", id="btn-picker-cancel", variant="error")
@@ -139,6 +140,13 @@ class ServerPickerScreen(ModalScreen):
                 self.query_one("#picker-detail", Static).update(f"[bold]{s.name}[/]  {s.url}{kind_info}  [dim]{s.description}[/]")
         except Exception:
             pass
+
+    @on(Button.Pressed, "#btn-picker-ok")
+    def on_ok(self) -> None:
+        profile = self._resolve_profile()
+        if profile:
+            self.dismiss(profile)
+            self._callback(profile)
 
     @on(Button.Pressed, "#btn-picker-connect")
     def on_connect(self) -> None:

@@ -17,6 +17,7 @@ class ModelsPane(Static):
         super().__init__(**kw)
         self.client = client
         self._data: List[Dict[str, Any]] = []
+        self._filtered: List[Dict[str, Any]] = []
 
     def compose(self) -> ComposeResult:
         yield Label("Models — Available Models (GET /api/models & /v1/models)", id="models-title")
@@ -52,11 +53,13 @@ class ModelsPane(Static):
                     m.get("alias", "—")[:20],
                     cap_str[:24],
                 )
+            self._filtered = list(self._data)
             w = self.query_one("#models-detail", Static)
             txt = f"{len(models)} models"
             w.update(f"[dim]{txt}[/]")
             _store_plain(w, txt)
         except Exception as e:
+            self._filtered = list(self._data)
             w = self.query_one("#models-detail", Static)
             w.update(f"[red]{e}[/]")
             _store_plain(w, str(e))
@@ -68,6 +71,7 @@ class ModelsPane(Static):
     @on(Button.Pressed, "#btn-models-copy")
     def on_copy(self) -> None:
         try:
+            self._filtered = list(self._data)
             w = self.query_one("#models-detail", Static)
             plain = getattr(w, "_plain_text", "") or ""
             if plain:

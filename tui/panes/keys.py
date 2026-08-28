@@ -50,7 +50,7 @@ class KeysPane(Static):
                 table.add_row(
                     k.get("name", "—"),
                     mask_key(k.get("key", "")),
-                    "✓" if k.get("isActive", True) else "✗",
+                    "yes" if k.get("isActive", True) else "no",
                     k.get("machineId", k.get("machine_id", "—"))[:12],
                     fmt_time(k.get("createdAt", k.get("created_at", ""))),
                     k.get("id", "")[:8],

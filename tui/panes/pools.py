@@ -36,7 +36,7 @@ class ProxyPoolsPane(Static):
             data = await asyncio.to_thread(self.client.list_proxy_pools)
             self._data = data if isinstance(data, list) else []
             for p in self._data:
-                table.add_row(p.get("name","—")[:20], p.get("type","—"), p.get("proxyUrl","—")[:40], "✓" if p.get("isActive") else "✗", p.get("id","")[:8])
+                table.add_row(p.get("name","—")[:20], p.get("type","—"), p.get("proxyUrl","—")[:40], "yes" if p.get("isActive") else "no", p.get("id","")[:8])
             w = self.query_one("#pools-detail", Static)
             txt = f"{len(self._data)} pools"
             w.update(f"[dim]{txt}[/]")

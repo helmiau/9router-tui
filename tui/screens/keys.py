@@ -8,7 +8,7 @@ from textual import on, work
 from textual.app import ComposeResult
 from textual.containers import Vertical, Horizontal, VerticalScroll
 from textual.screen import ModalScreen
-from textual.widgets import Button, DataTable, Input, Label, Static, Select, TextArea
+from textual.widgets import Button, Checkbox, DataTable, Input, Label, Static, Select, TextArea
 
 from client import NinerouterClient
 

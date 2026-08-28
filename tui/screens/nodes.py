@@ -33,7 +33,7 @@ class NodeEditScreen(ModalScreen):
 
     def compose(self):
         from textual.containers import Vertical, Horizontal
-        from textual.widgets import Label, Static, Input, Button, Select
+        from textual.widgets import Label, Static, Input, Button, Select, Checkbox
         is_edit = self._rec is not None
         title = "Edit Node" if is_edit else "Add Node"
         rec = self._rec or {}
@@ -43,6 +43,7 @@ class NodeEditScreen(ModalScreen):
         full_id = rec.get("id", "") if rec else ""
         suffix = extract_uid_suffix(full_id, ntype, apitype) if is_edit and full_id else ""
         prefix = uid_prefix_for_type(ntype, apitype) if is_edit else ""
+        is_active = bool(rec.get("isActive", True)) if rec else True
         with Vertical(id="node-edit-container"):
             yield Label(title, id="node-edit-title")
             if is_edit and full_id:
@@ -51,18 +52,23 @@ class NodeEditScreen(ModalScreen):
             with Vertical(id="node-edit-fields"):
                 yield Label("Name")
                 yield Input(value=rec.get("name", ""), placeholder="e.g. CutadAI", id="node-name")
-                yield Label("Prefix (e.g. cutad, hcn, bynara)")
-                yield Input(value=rec.get("prefix", ""), placeholder="prefix", id="node-prefix")
+                yield Label("Node Prefix — for model routing (e.g. dhl → dhl/model-name)")
+                yield Input(value=rec.get("prefix", ""), placeholder="e.g. dhl, cutad, hcn", id="node-prefix")
+                yield Static("[dim]Prefix is used as dhl/model-name, not part of the node ID[/]", id="node-prefix-desc")
                 if is_edit:
-                    yield Label("UID Suffix (editable — e.g. cutad, hcnsec)")
-                    yield Input(value=suffix, placeholder="suffix", id="node-uid-suffix")
-                    yield Static(f"[dim]Preview: {prefix}{suffix or '…'}[/]", id="node-uid-preview")
+                    yield Label("UID Prefix — ID prefix for openai/anthropic-compatible (read-only, derived from Type + API Type)")
+                    yield Input(value=prefix, placeholder="e.g. openai-compatible-chat-", id="node-uid-prefix", disabled=True)
+                    yield Label("UID Suffix — last part of node ID (editable)")
+                    yield Input(value=suffix, placeholder="e.g. cutad, hcnsec, bynara", id="node-uid-suffix")
+                    yield Static(f"[dim]Full ID preview: {prefix}{suffix or '…'}[/]", id="node-uid-preview")
                 yield Label("Type")
                 yield Select([("openai-compatible", "openai-compatible"), ("anthropic-compatible", "anthropic-compatible"), ("custom-embedding", "custom-embedding")], value=rec.get("type", "openai-compatible"), id="node-type", allow_blank=False)
                 yield Label("API Type (only for openai-compatible: chat / responses)")
                 yield Select([("chat", "chat"), ("responses", "responses")], value=rec.get("apiType", rec.get("api_type", "chat")) or "chat", id="node-apitype", allow_blank=True)
                 yield Label("Base URL")
                 yield Input(value=rec.get("baseUrl", rec.get("base_url", "")), placeholder="https://api.example.com/v1", id="node-baseurl")
+                yield Label("Active")
+                yield Checkbox(value=is_active, label="Active (enabled)", id="node-active")
             yield Static("", id="node-edit-status")
             with Horizontal():
                 yield Button("Save", id="btn-node-save", variant="primary")
@@ -74,9 +80,13 @@ class NodeEditScreen(ModalScreen):
             ntype = self.query_one("#node-type", Select).value or "openai-compatible"
             apitype = self.query_one("#node-apitype", Select).value or "chat"
             prefix = uid_prefix_for_type(ntype, apitype)
+            try:
+                self.query_one("#node-uid-prefix", Input).value = prefix
+            except Exception:
+                pass
             suffix = event.value.strip()
             preview = prefix + suffix if suffix else prefix + "…"
-            self.query_one("#node-uid-preview", Static).update(f"[dim]Preview: {preview}[/]")
+            self.query_one("#node-uid-preview", Static).update(f"[dim]Full ID preview: {preview}[/]")
         except Exception:
             pass
 
@@ -97,7 +107,9 @@ class NodeEditScreen(ModalScreen):
             if not base_url:
                 self.query_one("#node-edit-status", Static).update("[red]Base URL is required[/]")
                 return
-            payload: Dict[str, Any] = {"name": name, "prefix": prefix, "type": ntype, "baseUrl": base_url}
+            from textual.widgets import Checkbox as _CB
+            is_active = self.query_one("#node-active", _CB).value
+            payload: Dict[str, Any] = {"name": name, "prefix": prefix, "type": ntype, "baseUrl": base_url, "isActive": bool(is_active)}
             if ntype == "openai-compatible":
                 payload["apiType"] = apitype if apitype in ("chat", "responses") else "chat"
             # Check if UID suffix changed (only for edit)
