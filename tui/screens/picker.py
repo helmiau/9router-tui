@@ -79,34 +79,38 @@ class ServerPickerScreen(ModalScreen):
             if s.url not in seen:
                 seen.add(s.url)
                 merged.append(s)
-        # auto-detected local servers
-        try:
-            from client import auto_detect_servers
-            for det in auto_detect_servers(timeout=2):
-                url = det["url"]
-                if url not in seen:
-                    seen.add(url)
-                    merged.append(ServerProfile(name=det["name"], url=url, description="Auto-detected (reachable)"))
-        except Exception:
-            pass
         cur = self._client.base if hasattr(self._client, "base") else ""
         if cur and cur not in seen:
             merged.insert(0, ServerProfile(name="Current", url=cur, api_key=self._client.cfg.api_key, description="From current config"))
         self._servers = merged
+        # Auto-detection moved to the worker below so it does not block on_mount.
 
     @work(exclusive=True)
     async def _refresh_table(self) -> None:
         from textual.widgets import DataTable, Static
         import asyncio
-        from client import probe_server
+        from client import probe_server, ServerProfile, auto_detect_servers
         table = self.query_one("#picker-table", DataTable)
         table.clear()
         detail = self.query_one("#picker-detail", Static)
         detail.update("[dim]Probing servers...[/]")
+        # Auto-detect local servers (async so it doesn't block the UI)
+        try:
+            seen = {s.url for s in self._servers}
+            det = await asyncio.to_thread(lambda: auto_detect_servers(timeout=2))
+            for d in det:
+                url = d["url"]
+                if url not in seen:
+                    seen.add(url)
+                    self._servers.append(ServerProfile(name=d["name"], url=url, description="Auto-detected (reachable)"))
+        except Exception:
+            pass
         results = []
-        for s in self._servers:
-            res = await asyncio.to_thread(probe_server, s.url, s.api_key, 4)
-            results.append(res)
+        # Probe all servers in parallel so total time is bounded by the slowest
+        # server, not the sum of all timeouts.
+        results = await asyncio.gather(
+            *(asyncio.to_thread(probe_server, s.url, s.api_key, 4) for s in self._servers)
+        )
         table.clear()
         for s, res in zip(self._servers, results):
             status = "[green]OK[/]" if res["ok"] else f"[red]{res['error'] or res['status']}[/]"
