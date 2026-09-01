@@ -41,6 +41,7 @@ class ServerProfile:
     api_key: str = ""
     timeout: int = 15
     description: str = ""
+    password: str = ""  # dashboard cookie auth (optional)
     # ── remote Docker / SSH (for external VPS) ──
     ssh_host: str = ""  # e.g. "1.2.3.4" or "vps.example.com"
     ssh_user: str = ""  # e.g. "root" or "ubuntu"
@@ -280,6 +281,130 @@ class NinerouterClient:
         data = r.json()
         return data.get("pools", data.get("proxyPools", [] if isinstance(data, dict) else data))
 
+    # ── tunnel / tailscale ──
+    def tunnel_status(self) -> Dict[str, Any]:
+        """GET /api/tunnel/status → {tunnel, tailscale, download}."""
+        r = self._get("/api/tunnel/status")
+        r.raise_for_status()
+        return r.json()
+
+    def tunnel_enable(self) -> Dict[str, Any]:
+        r = self._post("/api/tunnel/enable")
+        r.raise_for_status()
+        return r.json()
+
+    def tunnel_disable(self) -> Dict[str, Any]:
+        r = self._post("/api/tunnel/disable")
+        r.raise_for_status()
+        return r.json()
+
+    def tailscale_enable(self, payload: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        r = self._post("/api/tunnel/tailscale-enable", json=payload or {})
+        r.raise_for_status()
+        return r.json()
+
+    def tailscale_disable(self) -> Dict[str, Any]:
+        r = self._post("/api/tunnel/tailscale-disable")
+        r.raise_for_status()
+        return r.json()
+
+    def tailscale_install(self, payload: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        r = self._post("/api/tunnel/tailscale-install", json=payload or {})
+        r.raise_for_status()
+        return r.json()
+
+    def tailscale_check(self) -> Dict[str, Any]:
+        r = self._post("/api/tunnel/tailscale-check")
+        r.raise_for_status()
+        return r.json()
+
+    # ── provider strategies / thinking (settings PATCH) ──
+    def patch_provider_strategies(self, strategies: Dict[str, Any]) -> Dict[str, Any]:
+        """PATCH /api/settings {providerStrategies: {providerId: {fallbackStrategy, stickyRoundRobinLimit}}}."""
+        return self.patch_settings({"providerStrategies": strategies})
+
+    def patch_provider_thinking(self, thinking: Dict[str, Any]) -> Dict[str, Any]:
+        """PATCH /api/settings {providerThinking: {providerId: {mode}}}."""
+        return self.patch_settings({"providerThinking": thinking})
+
+    def patch_combo_strategies(self, strategies: Dict[str, Any]) -> Dict[str, Any]:
+        return self.patch_settings({"comboStrategies": strategies})
+
+    def patch_sticky_limits(self, provider_limit: Optional[int] = None,
+                            combo_limit: Optional[int] = None) -> Dict[str, Any]:
+        payload: Dict[str, Any] = {}
+        if provider_limit is not None:
+            payload["stickyRoundRobinLimit"] = provider_limit
+        if combo_limit is not None:
+            payload["comboStickyRoundRobinLimit"] = combo_limit
+        return self.patch_settings(payload)
+
+    # ── provider models ──
+    def list_provider_models(self, provider_id: str) -> List[Dict[str, Any]]:
+        """GET /api/providers/:id/models — fetch models for a provider connection."""
+        r = self._get(f"/api/providers/{provider_id}/models")
+        r.raise_for_status()
+        data = r.json()
+        return data.get("models", data.get("data", [] if isinstance(data, dict) else data))
+
+    def list_suggested_models(self, url: str, type: str) -> List[Dict[str, Any]]:
+        """GET /api/providers/suggested-models?url=..&type=.. — fetch + filter remote model list."""
+        from urllib.parse import quote
+        q = f"/api/providers/suggested-models?url={quote(url)}&type={quote(type)}"
+        r = self._get(q)
+        r.raise_for_status()
+        return r.json().get("data", [])
+
+    def test_model(self, model: str, kind: str = "llm") -> Dict[str, Any]:
+        """POST /api/models/test — ping a single model."""
+        r = self._post("/api/models/test", json={"model": model, "kind": kind})
+        r.raise_for_status()
+        return r.json()
+
+    # ── custom models ──
+    def list_custom_models(self) -> List[Dict[str, Any]]:
+        r = self._get("/api/models/custom")
+        r.raise_for_status()
+        return r.json().get("models", [])
+
+    def create_custom_model(self, provider_alias: str, model_id: str,
+                            type: str = "llm", name: str = "") -> Dict[str, Any]:
+        r = self._post("/api/models/custom",
+                       json={"providerAlias": provider_alias, "id": model_id,
+                             "type": type, "name": name})
+        r.raise_for_status()
+        return r.json()
+
+    def delete_custom_model(self, provider_alias: str, model_id: str, type: str = "llm") -> Dict[str, Any]:
+        from urllib.parse import quote
+        q = f"/api/models/custom?providerAlias={quote(provider_alias)}&id={quote(model_id)}&type={quote(type)}"
+        r = self._delete(q)
+        r.raise_for_status()
+        return r.json() if r.text else {}
+
+    # ── disabled models ──
+    def list_disabled_models(self, provider_alias: Optional[str] = None) -> Dict[str, Any]:
+        q = f"/api/models/disabled?providerAlias={provider_alias}" if provider_alias else "/api/models/disabled"
+        r = self._get(q)
+        r.raise_for_status()
+        return r.json()
+
+    def disable_models(self, provider_alias: str, ids: List[str]) -> Dict[str, Any]:
+        r = self._post("/api/models/disabled", json={"providerAlias": provider_alias, "ids": ids})
+        r.raise_for_status()
+        return r.json()
+
+    def enable_models(self, provider_alias: str, ids: Optional[List[str]] = None) -> Dict[str, Any]:
+        """DELETE /api/models/disabled?providerAlias=..[&id=..] — re-enable model(s)."""
+        from urllib.parse import quote
+        if ids and len(ids) == 1:
+            q = f"/api/models/disabled?providerAlias={quote(provider_alias)}&id={quote(ids[0])}"
+        else:
+            q = f"/api/models/disabled?providerAlias={quote(provider_alias)}"
+        r = self._delete(q)
+        r.raise_for_status()
+        return r.json() if r.text else {}
+
     # ── version ──
     def get_version(self) -> Dict[str, Any]:
         r = self._get("/api/version")
@@ -333,6 +458,7 @@ def _load_servers_from_file(base_dir: Optional[str] = None) -> List[ServerProfil
                         api_key=item.get("api_key", item.get("apiKey", "")),
                         timeout=int(item.get("timeout", 15)),
                         description=item.get("description", ""),
+                        password=item.get("password", ""),
                     ))
             if out:
                 return out
@@ -361,6 +487,7 @@ def _load_servers_from_file(base_dir: Optional[str] = None) -> List[ServerProfil
                             api_key=item.get("api_key", item.get("apiKey", "")),
                             timeout=int(item.get("timeout", 15)),
                             description=item.get("description", ""),
+                            password=item.get("password", ""),
                         ))
                 if out:
                     return out
@@ -373,7 +500,14 @@ def save_servers_to_file(servers: List[ServerProfile], base_dir: Optional[str] =
     base = base_dir or _get_app_dir()
     jpath = os.path.join(base, SERVERS_FILE)
     payload = [
-        {"name": s.name, "url": s.url, "api_key": s.api_key, "timeout": s.timeout, "description": s.description}
+        {
+            "name": s.name,
+            "url": s.url,
+            "api_key": s.api_key,
+            "timeout": s.timeout,
+            "description": s.description,
+            "password": s.password,
+        }
         for s in servers
     ]
     with open(jpath, "w", encoding="utf-8") as f:

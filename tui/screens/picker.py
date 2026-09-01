@@ -50,6 +50,7 @@ class ServerPickerScreen(ModalScreen):
                 yield Label("Custom server (leave empty to use selected):", id="picker-custom-label")
                 yield Input(placeholder="https://your-9router.example.com  or  http://localhost:20128", id="input-custom-url")
                 yield Input(placeholder="API key (optional, if requireApiKey=true)", id="input-custom-key", password=False)
+                yield Input(placeholder="Dashboard password (optional, if requireLogin=true)", id="input-custom-password", password=False)
                 yield Input(placeholder="Name (optional, e.g. My VPS)", id="input-custom-name")
                 yield Label("Remote Docker via SSH (optional — for VPS):", id="picker-ssh-label")
                 yield Input(placeholder="SSH host (e.g. 1.2.3.4 or vps.example.com)", id="input-ssh-host")
@@ -143,17 +144,34 @@ class ServerPickerScreen(ModalScreen):
 
     @on(Button.Pressed, "#btn-picker-ok")
     def on_ok(self) -> None:
-        profile = self._resolve_profile()
-        if profile:
-            self.dismiss(profile)
-            self._callback(profile)
+        """Confirm selected server from table."""
+        from textual.widgets import DataTable
+        table = self.query_one("#picker-table", DataTable)
+        # Get currently selected row index
+        try:
+            cursor = table.cursor_row
+            if cursor is not None and 0 <= cursor < len(self._servers):
+                self._selected = self._servers[cursor]
+        except Exception:
+            pass
+        if not self._selected and self._servers:
+            self._selected = self._servers[0]
+        if not self._selected:
+            self.query_one("#picker-detail", Static).update("[yellow]No server selected — pick from list or fill Custom[/]")
+            return
+        profile = self._selected
+        self.dismiss(profile)
+        self._callback(profile)
 
     @on(Button.Pressed, "#btn-picker-connect")
     def on_connect(self) -> None:
+        """Connect using custom input fields or selected server."""
         profile = self._resolve_profile()
         if profile:
             self.dismiss(profile)
             self._callback(profile)
+        else:
+            self.query_one("#picker-detail", Static).update("[yellow]Fill URL or select a server from the list[/]")
 
     @on(Button.Pressed, "#btn-picker-save")
     def on_save(self) -> None:
@@ -188,18 +206,19 @@ class ServerPickerScreen(ModalScreen):
         try:
             custom_url = self.query_one("#input-custom-url", Input).value.strip()
             custom_key = self.query_one("#input-custom-key", Input).value.strip()
+            custom_password = self.query_one("#input-custom-password", Input).value.strip()
             custom_name = self.query_one("#input-custom-name", Input).value.strip()
             ssh_host = self.query_one("#input-ssh-host", Input).value.strip()
             ssh_user = self.query_one("#input-ssh-user", Input).value.strip()
             ssh_key = self.query_one("#input-ssh-key", Input).value.strip()
             compose_path = self.query_one("#input-compose-path", Input).value.strip()
         except Exception:
-            custom_url = custom_key = custom_name = ssh_host = ssh_user = ssh_key = compose_path = ""
+            custom_url = custom_key = custom_password = custom_name = ssh_host = ssh_user = ssh_key = compose_path = ""
         if custom_url:
             if not custom_url.startswith("http"):
                 custom_url = "http://" + custom_url
             custom_url = custom_url.rstrip("/")
-            return ServerProfile(name=custom_name or custom_url, url=custom_url, api_key=custom_key, timeout=15, description="Custom", ssh_host=ssh_host, ssh_user=ssh_user or "root", ssh_key=ssh_key, compose_path=compose_path)
+            return ServerProfile(name=custom_name or custom_url, url=custom_url, api_key=custom_key, password=custom_password, timeout=15, description="Custom", ssh_host=ssh_host, ssh_user=ssh_user or "root", ssh_key=ssh_key, compose_path=compose_path)
         if self._selected:
             # if SSH fields filled, merge into selected
             if ssh_host:

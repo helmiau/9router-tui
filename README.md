@@ -237,7 +237,7 @@ timeout = 15
 [ui]
 theme = "dark"
 refresh_interval = 30
-default_page = "overview"
+default_page = "dashboard"
 ```
 
 See `config.toml.example`, `servers.json.example`, and `.env.example`.
@@ -249,17 +249,12 @@ See `config.toml.example`, `servers.json.example`, and `.env.example`.
 | `q` | Quit |
 | `r` | Refresh active page |
 | `s` | **Switch Server** — open picker (Local / Tunnel / Custom) |
-| `1` | Overview |
-| `2` | Providers |
-| `3` | Nodes |
+| `1` | Dashboard (Health / Profiles / TUI Config) |
+| `2` | Endpoint & Key (Endpoints / Keys) |
+| `3` | Providers (Connections / Available Models / Nodes / Models) |
 | `4` | Combos |
-| `5` | Models |
-| `6` | Keys |
-| `7` | Usage |
-| `8` | Settings |
-| `9` | **Update** — version, update, Docker, Backup/Restore |
-| `0` | Pools |
-| `-` | Logs |
+| `5` | Usage (Stats / Request Logs) |
+| `6` | System (Proxy Pools / Settings / Update & Docker) |
 | `↑/↓` | Navigate table |
 | `Enter` | View JSON detail for selected row / Connect in picker |
 | `Tab` | Switch tab |

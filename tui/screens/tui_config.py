@@ -52,7 +52,7 @@ class TuiConfigScreen(ModalScreen):
                 yield Label("[server] api_key")
                 yield Input(value=srv.get("api_key", ""), placeholder="sk-...", id="cfg-api-key", password=False)
                 yield Label("[server] password (for /api/* cookie auth)")
-                yield Input(value=srv.get("password", ""), placeholder="123456", id="cfg-password", password=True)
+                yield Input(value=srv.get("password", ""), placeholder="123456", id="cfg-password", password=False)
                 yield Label("[server] timeout (seconds)")
                 yield Input(value=str(srv.get("timeout", 15)), placeholder="15", id="cfg-timeout")
                 yield Label("[ui] auto_login (auto-login to default server on start)")
@@ -60,7 +60,7 @@ class TuiConfigScreen(ModalScreen):
                 yield Label("[ui] theme")
                 yield Select([("dark", "dark"), ("light", "light"), ("auto", "auto")], value=ui.get("theme", "dark"), id="cfg-theme", allow_blank=True)
                 yield Label("[ui] default_page")
-                yield Select([("overview", "overview"), ("providers", "providers"), ("nodes", "nodes"), ("combos", "combos"), ("models", "models"), ("keys", "keys"), ("usage", "usage"), ("settings", "settings")], value=ui.get("default_page", "overview"), id="cfg-default-page", allow_blank=True)
+                yield Select([("dashboard", "dashboard"), ("endpoint-keys", "Endpoint & Key"), ("providers", "providers"), ("combos", "combos"), ("usage", "usage"), ("system", "system")], value=ui.get("default_page", "dashboard"), id="cfg-default-page", allow_blank=True)
                 yield Label("[display] show_secrets")
                 yield Checkbox(value=bool(disp.get("show_secrets", False)), label="Show secrets", id="cfg-show-secrets")
                 yield Label("[display] page_size")
@@ -99,7 +99,7 @@ class TuiConfigScreen(ModalScreen):
                 return
             auto_login = self.query_one("#cfg-auto-login", Checkbox).value
             theme = self.query_one("#cfg-theme", Select).value or "dark"
-            default_page = self.query_one("#cfg-default-page", Select).value or "overview"
+            default_page = self.query_one("#cfg-default-page", Select).value or "dashboard"
             show_secrets = self.query_one("#cfg-show-secrets", Checkbox).value
             page_size_s = self.query_one("#cfg-page-size", Input).value.strip()
             try:

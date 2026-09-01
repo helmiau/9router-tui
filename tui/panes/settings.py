@@ -210,7 +210,7 @@ class SettingsPane(Static):
                         data = tomllib.load(f)
                 srv = data.get("server", {})
                 ui = data.get("ui", {})
-                lines.append(f"[bold][server][/] url={srv.get('url','—')}  api_key={'***' if srv.get('api_key') else '—'}  password={'***' if srv.get('password') else '—'}  timeout={srv.get('timeout','—')}")
+                lines.append(f"[bold][server][/] url={srv.get('url','—')}  api_key={'***' if srv.get('api_key') else '—'}  password={srv.get('password','—')}  timeout={srv.get('timeout','—')}")
                 lines.append(f"[bold][ui][/] auto_login={ui.get('auto_login', True)}  theme={ui.get('theme','—')}  default_page={ui.get('default_page','—')}")
                 disp = data.get("display", {})
                 if disp:

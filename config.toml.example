@@ -48,7 +48,7 @@ theme = "dark"
 # Refresh interval in seconds (0 = manual only)
 refresh_interval = 30
 # Default page on launch
-default_page = "overview"  # overview | providers | nodes | combos | models | keys | usage | settings
+default_page = "dashboard"  # dashboard | endpoint-keys | providers | combos | usage | system
 
 [display]
 # Show sensitive fields (apiKey) — masked by default

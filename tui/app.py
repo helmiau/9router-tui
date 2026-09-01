@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional
 
 from textual.app import App, ComposeResult
 from textual.binding import Binding
+from textual.containers import Horizontal
 from textual.widgets import Button, DataTable, Footer, Header, Input, Label, Static, TabbedContent, TabPane, Select
 from textual import on, work
 
@@ -18,22 +19,25 @@ except ImportError:
 
 from client import NinerouterClient, load_config_from_env_and_file, has_any_config
 from tui.panes.overview import OverviewPane
-from tui.panes.providers import ProvidersPane
+from tui.panes.endpoints import EndpointsPane
+from tui.panes.keys import KeysPane
+from tui.panes.provider_connections import ProviderConnectionsPane
+from tui.panes.provider_models import ProviderModelsPane
 from tui.panes.nodes import NodesPane
 from tui.panes.combos import CombosPane
 from tui.panes.models import ModelsPane
-from tui.panes.keys import KeysPane
 from tui.panes.usage import UsagePane
 from tui.panes.settings import SettingsPane
 from tui.panes.pools import ProxyPoolsPane
 from tui.panes.logs import LogsPane
 from tui.panes.update import UpdatePane
 from tui.screens.picker import ServerPickerScreen
+from tui.screens.tui_config import TuiConfigScreen
 
 class NineRouterTUI(App):
     CSS = """
     Screen { background: $background; }
-    #overview-body, #providers-detail, #nodes-detail, #combos-detail, #models-detail, #keys-detail, #usage-body, #usage-detail, #settings-body {
+    #overview-body, #endpoints-body, #prov-conn-detail, #prov-models-detail, #nodes-detail, #combos-detail, #models-detail, #keys-detail, #usage-body, #usage-detail, #settings-body {
         padding: 1 1;
         border: solid $primary-background;
         margin: 1 0;
@@ -62,17 +66,12 @@ class NineRouterTUI(App):
         Binding("ctrl+c", "copy_detail", "Copy", show=False, priority=False),
         Binding("ctrl+shift+c", "copy_detail", "Copy Detail", show=False, priority=True),
         Binding("ctrl+a", "select_all_input", "Select All", show=False, priority=True),
-        Binding("1", "tab('overview')", "Overview"),
-        Binding("2", "tab('providers')", "Providers"),
-        Binding("3", "tab('nodes')", "Nodes"),
+        Binding("1", "tab('dashboard')", "Dashboard"),
+        Binding("2", "tab('endpoint-keys')", "Endpoint & Key"),
+        Binding("3", "tab('providers')", "Providers"),
         Binding("4", "tab('combos')", "Combos"),
-        Binding("5", "tab('models')", "Models"),
-        Binding("6", "tab('keys')", "Keys"),
-        Binding("7", "tab('usage')", "Usage"),
-        Binding("8", "tab('settings')", "Settings"),
-        Binding("9", "tab('update')", "Update"),
-        Binding("0", "tab('pools')", "Pools"),
-        Binding("minus", "tab('logs')", "Logs"),
+        Binding("5", "tab('usage')", "Usage"),
+        Binding("6", "tab('system')", "System"),
     ]
 
     def __init__(self, client: Optional[NinerouterClient] = None, **kw):
@@ -82,30 +81,62 @@ class NineRouterTUI(App):
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
-        yield Static("[dim]Press 's' switch server • 'r' refresh • 1-9 tabs • 0 Pools • - Logs • q quit • Ctrl+Shift+C copy detail[/]", id="hint-bar")
-        with TabbedContent(initial="overview"):
-            with TabPane("Overview", id="overview"):
-                yield OverviewPane(self.client)
+        yield Static("[dim]Press 's' switch server • 'r' refresh • 1-6 tabs • q quit • Ctrl+Shift+C copy detail[/]", id="hint-bar")
+        with TabbedContent(initial="dashboard"):
+            # ── Tab 1: Dashboard (web: /dashboard home) ──
+            with TabPane("Dashboard", id="dashboard"):
+                with TabbedContent():
+                    with TabPane("Health", id="dashboard-health"):
+                        yield OverviewPane(self.client)
+                    with TabPane("Profiles", id="dashboard-profiles"):
+                        yield Static("[dim]Server profiles — press 's' to switch, or use Manage Servers below[/]", id="profiles-intro")
+                        yield Horizontal(
+                            Button("Switch Server", id="btn-profiles-switch", variant="primary"),
+                            Button("Manage Servers", id="btn-profiles-servers", variant="default"),
+                        )
+                    with TabPane("TUI Config", id="dashboard-tui-config"):
+                        yield Static("[dim]TUI Config — click Edit button below[/]", id="tui-config-intro")
+                        yield Horizontal(
+                            Button("Edit TUI Config", id="btn-tui-config-edit", variant="default"),
+                            Button("Manage Servers", id="btn-tui-servers", variant="default"),
+                        )
+            # ── Tab 2: Endpoint & Key (web: /dashboard/endpoint) ──
+            with TabPane("Endpoint & Key", id="endpoint-keys"):
+                with TabbedContent():
+                    with TabPane("Endpoints", id="ek-endpoints"):
+                        yield EndpointsPane(self.client)
+                    with TabPane("Keys", id="ek-keys"):
+                        yield KeysPane(self.client)
+            # ── Tab 3: Providers (web: /dashboard/providers) ──
             with TabPane("Providers", id="providers"):
-                yield ProvidersPane(self.client)
-            with TabPane("Nodes", id="nodes"):
-                yield NodesPane(self.client)
+                with TabbedContent():
+                    with TabPane("Connections", id="providers-manage"):
+                        yield ProviderConnectionsPane(self.client)
+                    with TabPane("Available Models", id="providers-models"):
+                        yield ProviderModelsPane(self.client)
+                    with TabPane("Nodes", id="providers-nodes"):
+                        yield NodesPane(self.client)
+                    with TabPane("Models", id="providers-models-list"):
+                        yield ModelsPane(self.client)
+            # ── Tab 4: Combos (web: /dashboard/combos) ──
             with TabPane("Combos", id="combos"):
                 yield CombosPane(self.client)
-            with TabPane("Models", id="models"):
-                yield ModelsPane(self.client)
-            with TabPane("Keys", id="keys"):
-                yield KeysPane(self.client)
+            # ── Tab 5: Usage (web: /dashboard/usage) ──
             with TabPane("Usage", id="usage"):
-                yield UsagePane(self.client)
-            with TabPane("Settings", id="settings"):
-                yield SettingsPane(self.client)
-            with TabPane("Pools", id="pools"):
-                yield ProxyPoolsPane(self.client)
-            with TabPane("Logs", id="logs"):
-                yield LogsPane(self.client)
-            with TabPane("Update", id="update"):
-                yield UpdatePane(self.client)
+                with TabbedContent():
+                    with TabPane("Stats", id="usage-stats"):
+                        yield UsagePane(self.client)
+                    with TabPane("Request Logs", id="usage-logs"):
+                        yield LogsPane(self.client)
+            # ── Tab 6: System (web: System section — proxy-pools, settings, update) ──
+            with TabPane("System", id="system"):
+                with TabbedContent():
+                    with TabPane("Proxy Pools", id="system-pools"):
+                        yield ProxyPoolsPane(self.client)
+                    with TabPane("Settings", id="system-settings"):
+                        yield SettingsPane(self.client)
+                    with TabPane("Update & Docker", id="system-update"):
+                        yield UpdatePane(self.client)
         yield Footer()
 
     def action_refresh(self) -> None:
@@ -113,22 +144,48 @@ class NineRouterTUI(App):
         try:
             tc = self.query_one(TabbedContent)
             active = tc.active
-            pane_map = {
-                "overview": OverviewPane,
-                "providers": ProvidersPane,
-                "nodes": NodesPane,
-                "combos": CombosPane,
-                "models": ModelsPane,
-                "keys": KeysPane,
-                "usage": UsagePane,
-                "settings": SettingsPane,
-                "pools": ProxyPoolsPane,
-                "logs": LogsPane,
-                "update": UpdatePane,
-            }
-            cls = pane_map.get(active)
+            # Direct panes (no sub-tabs)
+            direct = {"combos": CombosPane}
+            cls = direct.get(active)
             if cls:
                 for w in self.query(cls):
+                    if hasattr(w, "refresh_data"):
+                        w.refresh_data()
+                        break
+                return
+            # Tabs with nested sub-tabs — refresh the active sub-tab
+            sub_map = {
+                "dashboard": {
+                    "dashboard-health": OverviewPane,
+                },
+                "endpoint-keys": {
+                    "ek-endpoints": EndpointsPane,
+                    "ek-keys": KeysPane,
+                },
+                "providers": {
+                    "providers-manage": ProviderConnectionsPane,
+                    "providers-models": ProviderModelsPane,
+                    "providers-nodes": NodesPane,
+                    "providers-models-list": ModelsPane,
+                },
+                "usage": {
+                    "usage-stats": UsagePane,
+                    "usage-logs": LogsPane,
+                },
+                "system": {
+                    "system-pools": ProxyPoolsPane,
+                    "system-settings": SettingsPane,
+                    "system-update": UpdatePane,
+                },
+            }
+            subs = sub_map.get(active)
+            if not subs:
+                return
+            subtc = self.query_one(f"#{active} TabbedContent")
+            sub = subtc.active
+            sub_cls = subs.get(sub)
+            if sub_cls:
+                for w in self.query(sub_cls):
                     if hasattr(w, "refresh_data"):
                         w.refresh_data()
                         break
@@ -148,20 +205,24 @@ class NineRouterTUI(App):
         if not profile:
             return
         from client import NinerouterConfig, NinerouterClient
-        cfg = NinerouterConfig(url=profile.url, api_key=profile.api_key, timeout=profile.timeout)
+        cfg = NinerouterConfig(url=profile.url, api_key=profile.api_key, password=getattr(profile, "password", ""), timeout=profile.timeout)
         self.client = NinerouterClient(cfg)
         self.sub_title = f"{profile.name} — {profile.url}"
         for pane in self.query(OverviewPane):
             pane.client = self.client
-        for pane in self.query(ProvidersPane):
+        for pane in self.query(EndpointsPane):
+            pane.client = self.client
+        for pane in self.query(KeysPane):
+            pane.client = self.client
+        for pane in self.query(ProviderConnectionsPane):
+            pane.client = self.client
+        for pane in self.query(ProviderModelsPane):
             pane.client = self.client
         for pane in self.query(NodesPane):
             pane.client = self.client
         for pane in self.query(CombosPane):
             pane.client = self.client
         for pane in self.query(ModelsPane):
-            pane.client = self.client
-        for pane in self.query(KeysPane):
             pane.client = self.client
         for pane in self.query(UsagePane):
             pane.client = self.client
@@ -217,20 +278,32 @@ class NineRouterTUI(App):
             self.notify(f"Copy failed: {e}", severity="error", timeout=2)
 
     def _set_detail_plain(self, key: str, plain: str) -> None:
-        """Store plain text for a detail pane so copy works without markup parsing."""
+        """Store plain text for a detail pane so copy works without markup parsing.
+
+        `key` is the active sub-tab id (e.g. 'usage-logs', 'providers-nodes').
+        """
         try:
             self._detail_plain[key] = plain
             # also stash on the Static widget for direct access
             sel_map = {
-                "overview": "#overview-body",
-                "providers": "#providers-detail",
-                "nodes": "#nodes-detail",
+                "dashboard": "#overview-body",
+                "dashboard-health": "#overview-body",
+                "endpoint-keys": "#endpoints-body",
+                "ek-endpoints": "#endpoints-body",
+                "ek-keys": "#keys-detail",
+                "providers": "#prov-conn-detail",
+                "providers-manage": "#prov-conn-detail",
+                "providers-models": "#prov-models-detail",
+                "providers-nodes": "#nodes-detail",
+                "providers-models-list": "#models-detail",
                 "combos": "#combos-detail",
-                "models": "#models-detail",
-                "keys": "#keys-detail",
                 "usage": "#usage-detail",
-                "settings": "#settings-body",
-                "update": "#update-log",
+                "usage-stats": "#usage-detail",
+                "usage-logs": "#logs-detail",
+                "system": "#settings-body",
+                "system-pools": "#pools-detail",
+                "system-settings": "#settings-body",
+                "system-update": "#update-log",
             }
             sel = sel_map.get(key)
             if sel:
@@ -243,25 +316,55 @@ class NineRouterTUI(App):
             pass
 
     def _get_detail_text(self) -> str:
-        """Get plain text from the active pane's detail Static."""
+        """Get plain text from the active pane's detail Static.
+
+        Resolves the active sub-tab (if any) so copy works for nested
+        TabbedContent (e.g. Usage > Request Logs, Providers > Nodes).
+        """
         try:
             tc = self.query_one(TabbedContent)
             active = tc.active or ""
-            # 1) stored plain text (most reliable)
-            if active in self._detail_plain and self._detail_plain[active]:
-                return self._detail_plain[active]
-            pane_ids = {
-                "overview": "#overview-body",
-                "providers": "#providers-detail",
-                "nodes": "#nodes-detail",
-                "combos": "#combos-detail",
-                "models": "#models-detail",
-                "keys": "#keys-detail",
-                "usage": "#usage-detail",
-                "settings": "#settings-body",
-                "update": "#update-log",
+            # resolve active nested sub-tab
+            nested_map = {
+                "dashboard": ("#dashboard TabbedContent", "dashboard-health"),
+                "endpoint-keys": ("#endpoint-keys TabbedContent", "ek-endpoints"),
+                "providers": ("#providers TabbedContent", "providers-manage"),
+                "usage": ("#usage TabbedContent", "usage-stats"),
+                "system": ("#system TabbedContent", "system-pools"),
             }
-            sel = pane_ids.get(active)
+            sub = None
+            if active in nested_map:
+                sel, default = nested_map[active]
+                try:
+                    subtc = self.query_one(sel)
+                    sub = subtc.active or default
+                except Exception:
+                    sub = default
+            lookup = sub or active
+            # 1) stored plain text (most reliable)
+            if lookup in self._detail_plain and self._detail_plain[lookup]:
+                return self._detail_plain[lookup]
+            pane_ids = {
+                "dashboard": "#overview-body",
+                "dashboard-health": "#overview-body",
+                "endpoint-keys": "#endpoints-body",
+                "ek-endpoints": "#endpoints-body",
+                "ek-keys": "#keys-detail",
+                "providers": "#prov-conn-detail",
+                "providers-manage": "#prov-conn-detail",
+                "providers-models": "#prov-models-detail",
+                "providers-nodes": "#nodes-detail",
+                "providers-models-list": "#models-detail",
+                "combos": "#combos-detail",
+                "usage": "#usage-detail",
+                "usage-stats": "#usage-detail",
+                "usage-logs": "#logs-detail",
+                "system": "#settings-body",
+                "system-pools": "#pools-detail",
+                "system-settings": "#settings-body",
+                "system-update": "#update-log",
+            }
+            sel = pane_ids.get(lookup)
             if sel:
                 w = self.query_one(sel, Static)
                 # 2) widget stashed plain
@@ -388,11 +491,13 @@ class NineRouterTUI(App):
             self.client = NinerouterClient(cfg)
             self.sub_title = f"{default_profile.name} — {default_profile.url}"
             from tui.panes.overview import OverviewPane
-            from tui.panes.providers import ProvidersPane
+            from tui.panes.endpoints import EndpointsPane
+            from tui.panes.keys import KeysPane
+            from tui.panes.provider_connections import ProviderConnectionsPane
+            from tui.panes.provider_models import ProviderModelsPane
             from tui.panes.nodes import NodesPane
             from tui.panes.combos import CombosPane
             from tui.panes.models import ModelsPane
-            from tui.panes.keys import KeysPane
             from tui.panes.usage import UsagePane
             from tui.panes.settings import SettingsPane
             from tui.panes.pools import ProxyPoolsPane
@@ -400,15 +505,19 @@ class NineRouterTUI(App):
             from tui.panes.update import UpdatePane
             for pane in self.query(OverviewPane):
                 pane.client = self.client
-            for pane in self.query(ProvidersPane):
+            for pane in self.query(EndpointsPane):
+                pane.client = self.client
+            for pane in self.query(KeysPane):
+                pane.client = self.client
+            for pane in self.query(ProviderConnectionsPane):
+                pane.client = self.client
+            for pane in self.query(ProviderModelsPane):
                 pane.client = self.client
             for pane in self.query(NodesPane):
                 pane.client = self.client
             for pane in self.query(CombosPane):
                 pane.client = self.client
             for pane in self.query(ModelsPane):
-                pane.client = self.client
-            for pane in self.query(KeysPane):
                 pane.client = self.client
             for pane in self.query(UsagePane):
                 pane.client = self.client
@@ -424,6 +533,34 @@ class NineRouterTUI(App):
             return True
         except Exception:
             return False
+
+    @on(Button.Pressed, "#btn-profiles-switch")
+    def on_profiles_switch(self) -> None:
+        self.action_switch_server()
+
+    @on(Button.Pressed, "#btn-profiles-servers")
+    def on_profiles_servers(self) -> None:
+        from tui.screens.tui_servers import TuiServersScreen
+        self.push_screen(TuiServersScreen(self._on_tui_servers_done))
+
+    @on(Button.Pressed, "#btn-tui-config-edit")
+    def on_tui_config_edit(self) -> None:
+        self.push_screen(TuiConfigScreen(self._on_tui_config_done))
+
+    def _on_tui_config_done(self, ok: bool) -> None:
+        if ok:
+            self.notify("TUI config saved", timeout=2)
+            self.action_refresh()
+
+    @on(Button.Pressed, "#btn-tui-servers")
+    def on_tui_servers(self) -> None:
+        from tui.screens.tui_servers import TuiServersScreen
+        self.push_screen(TuiServersScreen(self._on_tui_servers_done))
+
+    def _on_tui_servers_done(self, ok: bool) -> None:
+        if ok:
+            self.notify("Servers updated", timeout=2)
+            self.action_refresh()
 
 
 # ── Server Picker (Modal) ──

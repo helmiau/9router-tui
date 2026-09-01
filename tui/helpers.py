@@ -5,6 +5,20 @@ from datetime import datetime
 from typing import Optional
 
 
+def _containing_pane_id(widget) -> Optional[str]:
+    """Return the id of the TabPane that directly contains this widget (if any)."""
+    try:
+        from textual.widgets import TabPane
+        parent = getattr(widget, "parent", None)
+        while parent is not None:
+            if isinstance(parent, TabPane):
+                return parent.id
+            parent = getattr(parent, "parent", None)
+    except Exception:
+        pass
+    return None
+
+
 def mask_key(k: str) -> str:
     if not k:
         return "—"
@@ -23,29 +37,19 @@ def fmt_time(s: Optional[str]) -> str:
         return s[:19]
 
 
-def _store_plain(widget, plain: str) -> None:
-    """Store plain text on Static for clipboard copy."""
+def _store_plain(widget, plain: str, tab_key: Optional[str] = None) -> None:
+    """Store plain text on Static for clipboard copy.
+
+    The plain text is stashed under the id of the TabPane that directly
+    contains the widget (if any) so copy works for nested sub-tabs
+    (e.g. Usage > Request Logs). Callers can override with `tab_key`.
+    """
     try:
         widget._plain_text = plain  # type: ignore[attr-defined]
         try:
             app = widget.app  # type: ignore[attr-defined]
             if hasattr(app, "_detail_plain"):
-                wid = getattr(widget, "id", "") or ""
-                key_map = {
-                    "overview-body": "overview",
-                    "providers-detail": "providers",
-                    "nodes-detail": "nodes",
-                    "combos-detail": "combos",
-                    "models-detail": "models",
-                    "keys-detail": "keys",
-                    "usage-detail": "usage",
-                    "usage-body": "usage",
-                    "settings-body": "settings",
-                    "update-log": "update",
-                    "update-version-body": "update",
-                    "update-docker-body": "update",
-                }
-                k = key_map.get(wid)
+                k = tab_key or _containing_pane_id(widget)
                 if k:
                     app._detail_plain[k] = plain  # type: ignore[attr-defined]
         except Exception:

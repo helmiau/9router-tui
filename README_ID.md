@@ -236,7 +236,7 @@ timeout = 15
 [ui]
 theme = "dark"
 refresh_interval = 30
-default_page = "overview"
+default_page = "dashboard"
 ```
 
 Lihat `config.toml.example`, `servers.json.example`, dan `.env.example`.

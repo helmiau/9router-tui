@@ -27,7 +27,10 @@
     panes/
       __init__.py
       overview.py     # OverviewPane
-      providers.py    # ProvidersPane
+      endpoints.py    # EndpointsPane (Endpoint & Keys > Endpoints)
+      provider_connections.py # ProviderConnectionsPane (Providers > Manage API Key)
+      provider_models.py # ProviderModelsPane (Providers > Available Models)
+      providers.py    # ProvidersPane (legacy, retained)
       nodes.py        # NodesPane
       combos.py       # CombosPane
       models.py       # ModelsPane
@@ -45,6 +48,12 @@
       combos.py       # ComboEditScreen
       keys.py         # KeyCreateScreen, KeyShowScreen
       confirm.py      # ConfirmScreen
+      tui_config.py   # TuiConfigScreen
+      tui_servers.py  # TuiServersScreen, ServerEditScreen
+      provider_strategy.py # ProviderStrategyScreen
+      provider_connection_edit.py # ProviderConnectionEditScreen
+      custom_model_edit.py # CustomModelEditScreen
+      thinking_level.py # ThinkingLevelScreen
     backup.py         # backup/restore helpers (see below)
   client.py           # stays, or split into client/ (api, config, models)
   cli/
