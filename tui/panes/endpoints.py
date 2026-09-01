@@ -43,12 +43,12 @@ class EndpointsPane(Static):
             tunnel = await asyncio.to_thread(self.client.tunnel_status)
             self._settings = settings if isinstance(settings, dict) else {}
             self._tunnel = tunnel if isinstance(tunnel, dict) else {}
-            self._render()
+            self._render_endpoint_details()
         except Exception as e:
             body.update(f"[red]{e}[/]")
             _store_plain(body, str(e))
 
-    def _render(self) -> None:
+    def _render_endpoint_details(self) -> None:
         try:
             body = self.query_one("#endpoints-body", Static)
             s = self._settings
