@@ -1,23 +1,25 @@
 """NineRouterTUI — main App (extracted from app.py)."""
 from __future__ import annotations
 
-import asyncio
-import json
 import os
-from typing import Any, Dict, List, Optional
+import sys
+import traceback
+from datetime import datetime
+from typing import Optional
 
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal
-from textual.widgets import Button, DataTable, Footer, Header, Input, Label, Static, TabbedContent, TabPane, Select
-from textual import on, work
+from textual.screen import Screen
+from textual.widgets import Button, Footer, Header, Label, Static, TabbedContent, TabPane, TextArea
+from textual import on
 
 try:
     from _version import __version__ as APP_VERSION
 except ImportError:
     APP_VERSION = "1.0.0"
 
-from client import NinerouterClient, load_config_from_env_and_file, has_any_config
+from client import NinerouterClient, load_config_from_env_and_file, _get_app_dir
 from tui.panes.overview import OverviewPane
 from tui.panes.endpoints import EndpointsPane
 from tui.panes.keys import KeysPane
@@ -54,6 +56,11 @@ class NineRouterTUI(App):
     #settings-editor { padding: 1 1; border: solid $primary-background; margin: 1 0; height: auto; }
     #settings-editor-fields { padding: 1 0; }
     #settings-editor-status { padding: 0 1; height: auto; }
+    /* Debug error screen */
+    #debug-title { padding: 1 1 0 1; }
+    #debug-traceback { height: 1fr; border: solid $error; margin: 1 1; }
+    #debug-meta { padding: 0 1; color: $text-muted; }
+    DebugErrorScreen > Horizontal { height: auto; padding: 1 1; }
     """
 
     TITLE = "9Router — Terminal Dashboard"
@@ -202,40 +209,42 @@ class NineRouterTUI(App):
         self.push_screen(ServerPickerScreen(self.client, self._on_server_picked))
 
     def _on_server_picked(self, profile) -> None:
-        if not profile:
+        """Apply a selected server after the picker modal has finished closing.
+
+        Updating App.sub_title while ServerPickerScreen is being dismissed can
+        race Textual's Header watcher and cause ``NoMatches: HeaderTitle``.
+        Deferring one refresh frame avoids that teardown race.
+        """
+        if not profile or not getattr(profile, "url", ""):
             return
-        from client import NinerouterConfig, NinerouterClient
-        cfg = NinerouterConfig(url=profile.url, api_key=profile.api_key, password=getattr(profile, "password", ""), timeout=profile.timeout)
-        self.client = NinerouterClient(cfg)
-        self.sub_title = f"{profile.name} — {profile.url}"
-        for pane in self.query(OverviewPane):
-            pane.client = self.client
-        for pane in self.query(EndpointsPane):
-            pane.client = self.client
-        for pane in self.query(KeysPane):
-            pane.client = self.client
-        for pane in self.query(ProviderConnectionsPane):
-            pane.client = self.client
-        for pane in self.query(ProviderModelsPane):
-            pane.client = self.client
-        for pane in self.query(NodesPane):
-            pane.client = self.client
-        for pane in self.query(CombosPane):
-            pane.client = self.client
-        for pane in self.query(ModelsPane):
-            pane.client = self.client
-        for pane in self.query(UsagePane):
-            pane.client = self.client
-        for pane in self.query(SettingsPane):
-            pane.client = self.client
-        for pane in self.query(ProxyPoolsPane):
-            pane.client = self.client
-        for pane in self.query(LogsPane):
-            pane.client = self.client
-        for pane in self.query(UpdatePane):
-            pane.client = self.client
-        self.action_refresh()
-        self.notify(f"Switched to {profile.name} — {profile.url}", timeout=3)
+        self.call_after_refresh(lambda: self._apply_server_profile(profile))
+
+    def _apply_server_profile(self, profile) -> None:
+        """Apply a server profile after modal dismissal is complete."""
+        try:
+            from client import NinerouterConfig, NinerouterClient
+            cfg = NinerouterConfig(
+                url=profile.url,
+                api_key=getattr(profile, "api_key", ""),
+                password=getattr(profile, "password", ""),
+                timeout=max(1, int(getattr(profile, "timeout", 15) or 15)),
+            )
+            new_client = NinerouterClient(cfg)
+            self.client = new_client
+            self.sub_title = f"{getattr(profile, 'name', profile.url)} — {profile.url}"
+            pane_types = (
+                OverviewPane, EndpointsPane, KeysPane,
+                ProviderConnectionsPane, ProviderModelsPane, NodesPane,
+                CombosPane, ModelsPane, UsagePane, SettingsPane,
+                ProxyPoolsPane, LogsPane, UpdatePane,
+            )
+            for pane_type in pane_types:
+                for pane in self.query(pane_type):
+                    pane.client = new_client
+            self.action_refresh()
+            self.notify(f"Switched to {getattr(profile, 'name', profile.url)} — {profile.url}", timeout=3)
+        except Exception as error:
+            self._handle_exception(error)
 
     # ── Clipboard helpers ──
     def _focused_input(self):
@@ -529,6 +538,9 @@ class NineRouterTUI(App):
                 pane.client = self.client
             for pane in self.query(UpdatePane):
                 pane.client = self.client
+            # Defer refresh until after the Header/sub_title watcher has settled
+            # to avoid race with the header rendering on auto-login.
+            self.call_after_refresh(self.action_refresh)
             self.notify(f"Auto-login: {default_profile.name} — {default_profile.url}", timeout=2)
             return True
         except Exception:
@@ -561,6 +573,132 @@ class NineRouterTUI(App):
         if ok:
             self.notify("Servers updated", timeout=2)
             self.action_refresh()
+
+    # ── Debug / crash handling ──
+    def _debug_log_path(self) -> str:
+        try:
+            base = _get_app_dir()
+        except Exception:
+            base = os.path.dirname(os.path.abspath(__file__))
+        try:
+            os.makedirs(os.path.join(base, "logs"), exist_ok=True)
+        except Exception:
+            pass
+        ts = datetime.now().strftime("%Y%m%d-%H%M%S")
+        return os.path.join(base, "logs", f"9router-tui-crash-{ts}.log")
+
+    def _save_debug_log(self, error: Exception) -> str:
+        path = self._debug_log_path()
+        try:
+            tb = "".join(traceback.format_exception(type(error), error, error.__traceback__))
+            body = (
+                f"9Router TUI crash log\n"
+                f"Time: {datetime.now().isoformat()}\n"
+                f"Version: {APP_VERSION}\n"
+                f"URL: {getattr(getattr(self, 'client', None), 'base', '')}\n"
+                f"Error: {type(error).__name__}: {error}\n\n"
+                f"{tb}\n"
+            )
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(body)
+        except Exception:
+            path = ""
+        return path
+
+    def _handle_exception(self, error: Exception) -> None:
+        """Override Textual default: save debug log and show a debug screen instead of force-closing."""
+        try:
+            # Preserve the base behavior for test frameworks: record the
+            # exception so Pilot/run_test can re-raise it later.
+            self._return_code = 1
+            if self._exception is None:
+                self._exception = error
+                try:
+                    self._exception_event.set()
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        try:
+            path = self._save_debug_log(error)
+            self.push_screen(DebugErrorScreen(error, path))
+        except Exception:
+            # If even debug screen fails, fall back to default behavior
+            super()._handle_exception(error)
+
+class DebugErrorScreen(Screen):
+    """Show full traceback and allow user to exit or continue."""
+
+    BINDINGS = [
+        Binding("q", "quit_app", "Quit"),
+        Binding("escape", "quit_app", "Quit"),
+        Binding("enter", "continue_app", "Continue"),
+    ]
+
+    def __init__(self, error: Exception, log_path: str = "") -> None:
+        super().__init__()
+        self._error = error
+        self._log_path = log_path
+
+    def compose(self) -> ComposeResult:
+        yield Header(show_clock=True)
+        yield Label("[bold red]Unhandled Error — Debug Mode[/]", id="debug-title")
+        tb = "".join(traceback.format_exception(type(self._error), self._error, self._error.__traceback__))
+        yield TextArea(tb, read_only=True, id="debug-traceback")
+        meta = (
+            f"Version: {APP_VERSION}\n"
+            f"Time: {datetime.now().isoformat()}\n"
+            f"Log: {self._log_path or 'not saved'}\n"
+            f"Error: {type(self._error).__name__}: {self._error}"
+        )
+        yield Static(meta, id="debug-meta")
+        yield Horizontal(
+            Button("Copy Traceback", id="btn-debug-copy", variant="default"),
+            Button("Open Log Folder", id="btn-debug-open", variant="default"),
+            Button("Continue", id="btn-debug-continue", variant="primary"),
+            Button("Quit", id="btn-debug-quit", variant="error"),
+        )
+
+    def on_mount(self) -> None:
+        try:
+            self.sub_title = "Debug mode — error captured"
+        except Exception:
+            pass
+
+    def action_quit_app(self) -> None:
+        self.app.exit(return_code=1)
+
+    def action_continue_app(self) -> None:
+        self.app.pop_screen()
+
+    @on(Button.Pressed, "#btn-debug-copy")
+    def on_copy(self) -> None:
+        try:
+            tb = "".join(traceback.format_exception(type(self._error), self._error, self._error.__traceback__))
+            self.app._copy_text(tb)  # type: ignore[attr-defined]
+        except Exception:
+            pass
+
+    @on(Button.Pressed, "#btn-debug-open")
+    def on_open(self) -> None:
+        try:
+            folder = os.path.dirname(self._log_path) if self._log_path else _get_app_dir()
+            if os.name == "nt":
+                os.startfile(folder)  # type: ignore[attr-defined]
+            elif sys.platform == "darwin":
+                os.system(f'open "{folder}"')
+            else:
+                os.system(f'xdg-open "{folder}"')
+        except Exception:
+            pass
+
+    @on(Button.Pressed, "#btn-debug-continue")
+    def on_continue(self) -> None:
+        self.app.pop_screen()
+
+    @on(Button.Pressed, "#btn-debug-quit")
+    def on_quit(self) -> None:
+        self.app.exit(return_code=1)
 
 
 # ── Server Picker (Modal) ──

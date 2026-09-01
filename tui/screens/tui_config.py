@@ -60,7 +60,24 @@ class TuiConfigScreen(ModalScreen):
                 yield Label("[ui] theme")
                 yield Select([("dark", "dark"), ("light", "light"), ("auto", "auto")], value=ui.get("theme", "dark"), id="cfg-theme", allow_blank=True)
                 yield Label("[ui] default_page")
-                yield Select([("dashboard", "dashboard"), ("endpoint-keys", "Endpoint & Key"), ("providers", "providers"), ("combos", "combos"), ("usage", "usage"), ("system", "system")], value=ui.get("default_page", "dashboard"), id="cfg-default-page", allow_blank=True)
+                # Migrate legacy default_page values to new tab IDs
+                _legacy_map = {
+                    "overview": "dashboard",
+                    "endpoint-keys": "endpoint-keys",
+                    "providers": "providers",
+                    "nodes": "providers",
+                    "combos": "combos",
+                    "models": "providers",
+                    "keys": "endpoint-keys",
+                    "usage": "usage",
+                    "settings": "system",
+                    "pools": "system",
+                    "logs": "system",
+                    "update": "system",
+                }
+                _raw_default = ui.get("default_page", "dashboard")
+                _migrated_default = _legacy_map.get(_raw_default, "dashboard")
+                yield Select([("dashboard", "dashboard"), ("endpoint-keys", "Endpoint & Key"), ("providers", "providers"), ("combos", "combos"), ("usage", "usage"), ("system", "system")], value=_migrated_default, id="cfg-default-page", allow_blank=True)
                 yield Label("[display] show_secrets")
                 yield Checkbox(value=bool(disp.get("show_secrets", False)), label="Show secrets", id="cfg-show-secrets")
                 yield Label("[display] page_size")

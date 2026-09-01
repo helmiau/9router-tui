@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 from textual import on, work
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
-from textual.widgets import Button, Checkbox, DataTable, Input, Label, Static, Switch, Select, TextArea
+from textual.widgets import Button, DataTable, Input, Label, Static, Select
 
 from client import NinerouterClient
 from tui.helpers import _store_plain, fmt_time, mask_key, status_style

@@ -34,11 +34,18 @@ class ProviderStrategyScreen(ModalScreen):
             yield Label("Proxy Pool:")
             pool_options = [(p.get("name", p.get("id")), p.get("name", p.get("id"))) for p in self.proxy_pools]
             pool_options.insert(0, ("— none —", ""))
-            yield Select(options=pool_options, value=strat.get("proxyPool") or "", id="sel-proxy-pool", allow_blank=False)
+            pool_ids = {v for _, v in pool_options}
+            pool_value = strat.get("proxyPool") or ""
+            if pool_value not in pool_ids:
+                pool_value = ""
+            yield Select(options=pool_options, value=pool_value, id="sel-proxy-pool", allow_blank=True)
             yield Label("Fallback Strategy:")
+            fallback_value = strat.get("fallbackStrategy") or "none"
+            if fallback_value not in ("none", "next", "all"):
+                fallback_value = "none"
             yield Select(
                 options=[("none", "none"), ("next", "next"), ("all", "all")],
-                value=strat.get("fallbackStrategy") or "none",
+                value=fallback_value,
                 id="sel-fallback",
                 allow_blank=False,
             )

@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional
 
 from textual import on, work
 from textual.app import ComposeResult
-from textual.containers import Horizontal, Vertical
+from textual.containers import Horizontal
 from textual.widgets import Button, DataTable, Input, Label, Static, Select
 
 from client import NinerouterClient

@@ -30,7 +30,7 @@ class CustomModelEditScreen(ModalScreen):
         with Vertical(id="cmodel-container"):
             yield Static("Add Custom Model")
             yield Label("Provider Alias:")
-            yield Input(value=self.provider_alias, id="inp-cmodel-provider", disabled=True)
+            yield Input(value=self.provider_alias or "", id="inp-cmodel-provider", disabled=True)
             yield Label("Model ID:")
             yield Input(value=m.get("id", ""), id="inp-cmodel-id", placeholder="e.g. gpt-4o-custom")
             yield Label("Type:")

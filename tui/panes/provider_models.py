@@ -7,11 +7,11 @@ from typing import Any, Dict, List, Optional
 
 from textual import on, work
 from textual.app import ComposeResult
-from textual.containers import Horizontal, Vertical
+from textual.containers import Horizontal
 from textual.widgets import Button, DataTable, Input, Label, Select, Static
 
 from client import NinerouterClient
-from tui.helpers import _store_plain, status_style
+from tui.helpers import _store_plain
 
 # Thinking levels per provider (from open-sse/providers/thinkingLevels.js)
 THINKING_LEVELS = {
@@ -69,9 +69,13 @@ class ProviderModelsPane(Static):
             sel = self.query_one("#select-pm-provider", Select)
             options = [(p.get("name", p.get("id", "?")), p.get("id")) for p in providers]
             sel.set_options(options)
-            if not self._selected_provider and providers:
-                self._selected_provider = providers[0].get("id")
-                sel.value = self._selected_provider
+            valid_ids = {p.get("id") for p in providers}
+            if not self._selected_provider or self._selected_provider not in valid_ids:
+                self._selected_provider = providers[0].get("id") if providers else None
+                try:
+                    sel.value = self._selected_provider
+                except Exception:
+                    pass
             # Fetch models for selected provider
             if self._selected_provider:
                 models = await asyncio.to_thread(self.client.list_provider_models, self._selected_provider)

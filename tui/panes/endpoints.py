@@ -2,15 +2,15 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from textual import on, work
 from textual.app import ComposeResult
-from textual.containers import Horizontal, Vertical
-from textual.widgets import Button, Checkbox, DataTable, Label, Static, Switch
+from textual.containers import Horizontal
+from textual.widgets import Button, Label, Static
 
 from client import NinerouterClient
-from tui.helpers import _store_plain, status_style
+from tui.helpers import _store_plain
 
 
 class EndpointsPane(Static):

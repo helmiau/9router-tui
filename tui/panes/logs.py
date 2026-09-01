@@ -2,15 +2,14 @@ from __future__ import annotations
 
 import asyncio
 import json
-from typing import Any, Dict, List, Optional
 
 from textual import on, work
 from textual.app import ComposeResult
-from textual.containers import Horizontal, Vertical
-from textual.widgets import Button, DataTable, Input, Label, Static, Select
+from textual.containers import Horizontal
+from textual.widgets import Button, DataTable, Label, Static
 
 from client import NinerouterClient
-from tui.helpers import _store_plain, fmt_time, mask_key, status_style
+from tui.helpers import _store_plain, fmt_time
 
 class LogsPane(Static):
     def __init__(self, client, **kw):
@@ -75,6 +74,17 @@ class LogsPane(Static):
 
 
 if __name__ == "__main__":
+    import os
+
+    from client import load_config_from_env_and_file
+
+    try:
+        from _version import __version__ as APP_VERSION
+    except ImportError:
+        APP_VERSION = "1.0.0"
+
+    from tui.app import NineRouterTUI
+
     import argparse
 
     parser = argparse.ArgumentParser(description=f"9Router Terminal Dashboard v{APP_VERSION} (standalone)")
