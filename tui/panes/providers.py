@@ -15,9 +15,20 @@ from tui.helpers import _store_plain, fmt_time, mask_key, status_style
 class ProvidersPane(Static):
     def __init__(self, client: NinerouterClient, **kw):
         super().__init__(**kw)
-        self.client = client
+        self._initial_client = client
         self._data: List[Dict[str, Any]] = []
         self._filtered: List[Dict[str, Any]] = []
+
+    @property
+    def client(self) -> NinerouterClient:
+        """Always use the app's current client so server switches apply instantly."""
+        try:
+            app_client = getattr(self.app, "client", None)
+            if app_client is not None:
+                return app_client
+        except Exception:
+            pass
+        return self._initial_client
 
     def compose(self) -> ComposeResult:
         yield Label("Providers — Connections (GET /api/providers)", id="providers-title")

@@ -232,15 +232,8 @@ class NineRouterTUI(App):
             new_client = NinerouterClient(cfg)
             self.client = new_client
             self.sub_title = f"{getattr(profile, 'name', profile.url)} — {profile.url}"
-            pane_types = (
-                OverviewPane, EndpointsPane, KeysPane,
-                ProviderConnectionsPane, ProviderModelsPane, NodesPane,
-                CombosPane, ModelsPane, UsagePane, SettingsPane,
-                ProxyPoolsPane, LogsPane, UpdatePane,
-            )
-            for pane_type in pane_types:
-                for pane in self.query(pane_type):
-                    pane.client = new_client
+            # Pane.client is now a dynamic property reading self.app.client,
+            # so all panes automatically use the new server without reassignment.
             self.action_refresh()
             self.notify(f"Switched to {getattr(profile, 'name', profile.url)} — {profile.url}", timeout=3)
         except Exception as error:
@@ -499,45 +492,8 @@ class NineRouterTUI(App):
                 pass
             self.client = NinerouterClient(cfg)
             self.sub_title = f"{default_profile.name} — {default_profile.url}"
-            from tui.panes.overview import OverviewPane
-            from tui.panes.endpoints import EndpointsPane
-            from tui.panes.keys import KeysPane
-            from tui.panes.provider_connections import ProviderConnectionsPane
-            from tui.panes.provider_models import ProviderModelsPane
-            from tui.panes.nodes import NodesPane
-            from tui.panes.combos import CombosPane
-            from tui.panes.models import ModelsPane
-            from tui.panes.usage import UsagePane
-            from tui.panes.settings import SettingsPane
-            from tui.panes.pools import ProxyPoolsPane
-            from tui.panes.logs import LogsPane
-            from tui.panes.update import UpdatePane
-            for pane in self.query(OverviewPane):
-                pane.client = self.client
-            for pane in self.query(EndpointsPane):
-                pane.client = self.client
-            for pane in self.query(KeysPane):
-                pane.client = self.client
-            for pane in self.query(ProviderConnectionsPane):
-                pane.client = self.client
-            for pane in self.query(ProviderModelsPane):
-                pane.client = self.client
-            for pane in self.query(NodesPane):
-                pane.client = self.client
-            for pane in self.query(CombosPane):
-                pane.client = self.client
-            for pane in self.query(ModelsPane):
-                pane.client = self.client
-            for pane in self.query(UsagePane):
-                pane.client = self.client
-            for pane in self.query(SettingsPane):
-                pane.client = self.client
-            for pane in self.query(ProxyPoolsPane):
-                pane.client = self.client
-            for pane in self.query(LogsPane):
-                pane.client = self.client
-            for pane in self.query(UpdatePane):
-                pane.client = self.client
+            # Pane.client is now a dynamic property reading self.app.client,
+            # so all panes automatically use the new server without reassignment.
             # Defer refresh until after the Header/sub_title watcher has settled
             # to avoid race with the header rendering on auto-login.
             self.call_after_refresh(self.action_refresh)

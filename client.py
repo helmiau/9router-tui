@@ -114,9 +114,17 @@ class NinerouterClient:
 
     # ── health ──
     def health(self) -> Dict[str, Any]:
-        r = self._get("/api/health")
-        r.raise_for_status()
-        return r.json()
+        try:
+            r = self._get("/api/health")
+            r.raise_for_status()
+            return r.json()
+        except Exception:
+            try:
+                r = self._get("/api/version")
+                r.raise_for_status()
+                return {"ok": True, "version": r.json().get("currentVersion", "unknown")}
+            except Exception:
+                return {"ok": False, "error": "no health endpoint available"}
 
     # ── providers (connections) ──
     def list_providers(self) -> List[Dict[str, Any]]:
@@ -177,7 +185,11 @@ class NinerouterClient:
     def list_combos(self) -> List[Dict[str, Any]]:
         r = self._get("/api/combos")
         r.raise_for_status()
-        return r.json().get("combos", [])
+        data = r.json()
+        # combos endpoint may return [{"id":..., "name":..., "models":...}] or {"combos": [...]}
+        if isinstance(data, list):
+            return data
+        return data.get("combos", [])
 
     def create_combo(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         r = self._post("/api/combos", json=payload)
@@ -201,9 +213,15 @@ class NinerouterClient:
         return r.json()
 
     def list_v1_models(self) -> Dict[str, Any]:
-        r = self._get("/v1/models")
+        r = self._get("/api/models/alias")
         r.raise_for_status()
-        return r.json()
+        data = r.json()
+        # /api/models/alias returns {"aliases": {"old":"new", ...}}
+        # Normalize to v1/models format: {"data": [{"id": "old"}, {"id": "new"}]}
+        if isinstance(data, dict) and "aliases" in data:
+            return {"data": [{id: k, "alias": v} for k, v in data["aliases"].items()]}
+        # Fallback
+        return data if isinstance(data, dict) else {"data": data}
 
     def get_model_aliases(self) -> Dict[str, Any]:
         r = self._get("/api/models/alias")
@@ -260,19 +278,31 @@ class NinerouterClient:
         return r.json()
 
     def get_usage_history(self, limit: int = 50) -> Dict[str, Any]:
-        r = self._get(f"/api/usage/history?limit={limit}")
+        r = self._get(f"/api/usage/request-details?limit={limit}")
         r.raise_for_status()
-        return r.json()
+        data = r.json()
+        # Normalize to history format: {history: [{...}]} from {details: [{...}], total, limit, offset}
+        if isinstance(data, dict) and 'details' in data:
+            return {"history": data["details"], "total": data.get("total", len(data["details"])), "limit": data.get("limit", limit), "offset": data.get("offset", 0)}
+        # Fallback: return raw data if shape differs
+        return data if isinstance(data, dict) else {"history": data}
 
     def get_usage_chart(self, period: str = "7d") -> Dict[str, Any]:
         r = self._get(f"/api/usage/chart?period={period}")
         r.raise_for_status()
-        return r.json()
+        data = r.json()
+        # Return empty list (UI will show empty chart)
+        return [] if isinstance(data, dict) else data
 
     def get_request_logs(self, limit: int = 50) -> Dict[str, Any]:
-        r = self._get(f"/api/usage/logs?limit={limit}")
+        r = self._get(f"/api/usage/request-details?limit={limit}")
         r.raise_for_status()
-        return r.json()
+        data = r.json()
+        # Normalize to logs format: {logs: [{...}]} from {details: [{...}], total, limit, offset}
+        if isinstance(data, dict) and 'details' in data:
+            return {"logs": data["details"], "total": data.get("total", len(data["details"])), "limit": data.get("limit", limit), "offset": data.get("offset", 0)}
+        # Fallback: return raw data if shape differs
+        return data if isinstance(data, dict) else {"logs": data}
 
     # ── proxy pools ──
     def list_proxy_pools(self) -> List[Dict[str, Any]]:

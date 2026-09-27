@@ -1,0 +1,190 @@
+{
+  "timestamp": "2026-09-27 08:20:23",
+  "base_url": "http://10.10.40.10:20128",
+  "results": [
+    {
+      "endpoint": "/api/health",
+      "status": 404,
+      "success": false,
+      "error": null,
+      "response_preview": "404 page not found\n",
+      "latency_ms": 8
+    },
+    {
+      "endpoint": "/api/version",
+      "status": 200,
+      "success": true,
+      "error": null,
+      "response_preview": "{\"currentVersion\":\"1.9.3\",\"latestVersion\":\"1.9.3\",\"hasUpdate\":false,\"downloadUrl\":\"https://github.com/luqman-v1/9router-go/releases/latest\",\"releaseNotes\":\"v1.9.3: Kiro fixes (403 bearer token from wr",
+      "latency_ms": 4
+    },
+    {
+      "endpoint": "/api/auth/status",
+      "status": 200,
+      "success": true,
+      "error": null,
+      "response_preview": "{\"authMode\":\"password\",\"authenticated\":false,\"displayName\":\"Password user\",\"hasPassword\":true,\"loginMethod\":\"Password\",\"oidcConfigured\":false,\"oidcEmail\":null,\"oidcLogin\":false,\"oidcLoginLabel\":\"Sign ",
+      "latency_ms": 7
+    },
+    {
+      "endpoint": "/api/settings",
+      "status": 200,
+      "success": true,
+      "error": null,
+      "response_preview": "{\"authMode\":\"password\",\"capacityAdapter\":{\"audioInput\":{\"enabled\":false,\"models\":[],\"roundRobin\":true},\"vision\":{\"enabled\":true,\"models\":[\"openrouter/google/gemma-4-26b-a4b-it:free\",\"oc/mimo-v2.5-free",
+      "latency_ms": 6
+    },
+    {
+      "endpoint": "/api/providers",
+      "status": 200,
+      "success": true,
+      "error": null,
+      "response_preview": "{\"connections\":[{\"authType\":\"oauth\",\"backoffLevel\":0,\"consecutiveUseCount\":1,\"createdAt\":\"2026-07-12T06:24:38.167Z\",\"email\":\"helmilaw@gmail.com\",\"expiresAt\":\"2026-09-29T08:41:26.251Z\",\"id\":\"d93fd9f1-0",
+      "latency_ms": 26
+    },
+    {
+      "endpoint": "/api/provider-nodes",
+      "status": 200,
+      "success": true,
+      "error": null,
+      "response_preview": "{\"nodes\":[{\"id\":\"openai-compatible-chat-dahono\",\"type\":\"openai-compatible\",\"name\":\"Dahono\",\"prefix\":\"dhl\",\"apiType\":\"chat\",\"baseUrl\":\"https://gateway.dahono.com/v1\",\"createdAt\":\"2026-06-15T14:39:53.24",
+      "latency_ms": 19
+    },
+    {
+      "endpoint": "/api/models",
+      "status": null,
+      "success": false,
+      "error": "TIMEOUT",
+      "response_preview": "",
+      "latency_ms": 3000
+    },
+    {
+      "endpoint": "/api/models/alias",
+      "status": 200,
+      "success": true,
+      "error": null,
+      "response_preview": "{\"aliases\":{\"claude-opus-4-6\":\"openai-compatible-chat-cavoti/claude-opus-4-6\",\"claude-opus-4-7\":\"openai-compatible-chat-cavoti/claude-opus-4-7\",\"claude-opus-4-8\":\"openai-compatible-chat-cavoti/claude-",
+      "latency_ms": 7
+    },
+    {
+      "endpoint": "/api/models/custom",
+      "status": 200,
+      "success": true,
+      "error": null,
+      "response_preview": "{\"models\":[{\"id\":\"claude-opus-4-8\",\"name\":\"claude-opus-4-8\",\"providerAlias\":\"anthropic-compatible-freemodeldev\",\"type\":\"llm\"},{\"id\":\"claude-opus-4-6\",\"name\":\"claude-opus-4-6\",\"providerAlias\":\"openai-c",
+      "latency_ms": 13
+    },
+    {
+      "endpoint": "/api/models/disabled",
+      "status": 200,
+      "success": true,
+      "error": null,
+      "response_preview": "{\"bpm\":[\"seed-2-0-pro-260328\",\"seed-2-0-code-preview-260328\",\"seed-2-0-mini-260215\",\"seed-2-0-lite-260228\",\"kimi-k2-thinking-251104\",\"glm-4-7-251222\",\"gpt-oss-120b-250805\"],\"bzl\":[\"claude-opus-4.7\",\"c",
+      "latency_ms": 6
+    },
+    {
+      "endpoint": "/api/v1/models",
+      "status": null,
+      "success": false,
+      "error": "TIMEOUT",
+      "response_preview": "",
+      "latency_ms": 3000
+    },
+    {
+      "endpoint": "/api/v1beta/models",
+      "status": 404,
+      "success": false,
+      "error": null,
+      "response_preview": "404 page not found\n",
+      "latency_ms": 7
+    },
+    {
+      "endpoint": "/api/keys",
+      "status": 200,
+      "success": true,
+      "error": null,
+      "response_preview": "[{\"createdAt\":\"2026-09-05T06:37:45.608Z\",\"id\":\"1c105184-71ab-4793-b0fc-c17e98c651f1\",\"isActive\":1,\"key\":\"sk-fa5\u202614ba\",\"machineId\":\"fa5f344bf7795553\",\"name\":\"prompt-ai\"},{\"createdAt\":\"2026-06-23T07:15:",
+      "latency_ms": 5
+    },
+    {
+      "endpoint": "/api/combos",
+      "status": 200,
+      "success": true,
+      "error": null,
+      "response_preview": "[{\"id\":\"386aa4b4-1fe5-41ee-a8d3-478bf65b7d12\",\"name\":\"all\",\"models\":\"[\\\"cf/@cf/deepseek-ai/deepseek-r1-distill-qwen-32b\\\",\\\"cf/@cf/meta/llama-3.1-70b-instruct-fp8-fast\\\",\\\"cf/@cf/meta/llama-3.1-8b-ins",
+      "latency_ms": 9
+    },
+    {
+      "endpoint": "/api/usage",
+      "status": 404,
+      "success": false,
+      "error": null,
+      "response_preview": "404 page not found\n",
+      "latency_ms": 4
+    },
+    {
+      "endpoint": "/api/usage/stats",
+      "status": 200,
+      "success": true,
+      "error": null,
+      "response_preview": "{\"totalRequests\":158,\"totalPromptTokens\":16379082,\"totalCompletionTokens\":65518,\"totalCachedTokens\":10470784,\"totalCost\":16.575635999999996,\"byProvider\":{\"openai-compatible-chat-gatekey\":{\"requests\":1",
+      "latency_ms": 145
+    },
+    {
+      "endpoint": "/api/usage/chart",
+      "status": 404,
+      "success": false,
+      "error": null,
+      "response_preview": "{\"error\":{\"code\":\"model_not_found\",\"message\":\"connection not found\",\"type\":\"invalid_request_error\"}}",
+      "latency_ms": 9
+    },
+    {
+      "endpoint": "/api/usage/history",
+      "status": 404,
+      "success": false,
+      "error": null,
+      "response_preview": "{\"error\":{\"code\":\"model_not_found\",\"message\":\"connection not found\",\"type\":\"invalid_request_error\"}}",
+      "latency_ms": 6
+    },
+    {
+      "endpoint": "/api/tags",
+      "status": 404,
+      "success": false,
+      "error": null,
+      "response_preview": "404 page not found\n",
+      "latency_ms": 19
+    },
+    {
+      "endpoint": "/api/locale",
+      "status": 404,
+      "success": false,
+      "error": null,
+      "response_preview": "404 page not found\n",
+      "latency_ms": 4
+    },
+    {
+      "endpoint": "/api/headroom/status",
+      "status": 200,
+      "success": true,
+      "error": null,
+      "response_preview": "{\"canStart\":false,\"extras\":{\"code\":false,\"ml\":false},\"installed\":false,\"localUrl\":false,\"managedPid\":null,\"path\":null,\"python\":null,\"running\":false,\"url\":\"http://headroom:8787\",\"version\":\"\"}",
+      "latency_ms": 124
+    },
+    {
+      "endpoint": "/api/pricing",
+      "status": 404,
+      "success": false,
+      "error": null,
+      "response_preview": "404 page not found\n",
+      "latency_ms": 4
+    },
+    {
+      "endpoint": "/api/shutdown",
+      "status": 404,
+      "success": false,
+      "error": null,
+      "response_preview": "404 page not found\n",
+      "latency_ms": 4
+    }
+  ]
+}

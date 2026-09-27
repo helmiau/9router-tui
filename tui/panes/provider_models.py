@@ -29,12 +29,23 @@ class ProviderModelsPane(Static):
 
     def __init__(self, client: NinerouterClient, **kw):
         super().__init__(**kw)
-        self.client = client
+        self._initial_client = client
         self._providers: List[Dict[str, Any]] = []
         self._models: List[Dict[str, Any]] = []
         self._custom: List[Dict[str, Any]] = []
         self._disabled: Dict[str, Any] = {}
         self._selected_provider: Optional[str] = None
+
+    @property
+    def client(self) -> NinerouterClient:
+        """Always use the app's current client so server switches apply instantly."""
+        try:
+            app_client = getattr(self.app, "client", None)
+            if app_client is not None:
+                return app_client
+        except Exception:
+            pass
+        return self._initial_client
 
     def compose(self) -> ComposeResult:
         yield Label("Available Models — thinking levels, custom/disabled models", id="prov-models-title")

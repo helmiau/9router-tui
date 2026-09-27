@@ -20,7 +20,7 @@ class ServerPickerScreen(ModalScreen):
     #picker-container {
         width: 72;
         height: auto;
-        max-height: 36;
+        max-height: 42;
         background: $surface;
         border: thick $primary;
         padding: 1 2;
@@ -28,8 +28,9 @@ class ServerPickerScreen(ModalScreen):
     #picker-title { text-style: bold; color: $primary; margin-bottom: 1; }
     #picker-table { height: 10; min-height: 6; }
     #picker-detail { height: auto; max-height: 6; margin: 1 0; }
-    #picker-inputs { height: auto; }
+    #picker-inputs { height: auto; max-height: 16; }
     #picker-inputs Input { margin: 1 0; }
+    #picker-buttons { height: auto; margin-top: 1; }
     """
 
     def __init__(self, client, callback, **kw):
@@ -40,13 +41,13 @@ class ServerPickerScreen(ModalScreen):
         self._selected = None
 
     def compose(self):
-        from textual.containers import Vertical, Horizontal
+        from textual.containers import Vertical, Horizontal, VerticalScroll
         from textual.widgets import Label, DataTable, Static, Input, Button
         with Vertical(id="picker-container"):
             yield Label("Select 9Router Server — no config found, pick one or add custom", id="picker-title")
             yield DataTable(id="picker-table", cursor_type="row", zebra_stripes=True)
             yield Static("", id="picker-detail")
-            with Vertical(id="picker-inputs"):
+            with VerticalScroll(id="picker-inputs"):
                 yield Label("Custom server (leave empty to use selected):", id="picker-custom-label")
                 yield Input(placeholder="https://your-9router.example.com  or  http://localhost:20128", id="input-custom-url")
                 yield Input(placeholder="API key (optional, if requireApiKey=true)", id="input-custom-key", password=False)
@@ -57,7 +58,7 @@ class ServerPickerScreen(ModalScreen):
                 yield Input(placeholder="SSH user (default: root)", id="input-ssh-user")
                 yield Input(placeholder="SSH key path (e.g. ~/.ssh/id_rsa)", id="input-ssh-key")
                 yield Input(placeholder="Compose path (e.g. /opt/9router/docker-compose.yml)", id="input-compose-path")
-            with Horizontal():
+            with Horizontal(id="picker-buttons"):
                 yield Button("OK", id="btn-picker-ok", variant="primary")
                 yield Button("Connect", id="btn-picker-connect", variant="primary")
                 yield Button("Save & Connect", id="btn-picker-save", variant="default")

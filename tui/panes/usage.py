@@ -15,7 +15,18 @@ from tui.helpers import _store_plain, fmt_time, mask_key
 class UsagePane(Static):
     def __init__(self, client: NinerouterClient, **kw):
         super().__init__(**kw)
-        self.client = client
+        self._initial_client = client
+
+    @property
+    def client(self) -> NinerouterClient:
+        """Always use the app's current client so server switches apply instantly."""
+        try:
+            app_client = getattr(self.app, "client", None)
+            if app_client is not None:
+                return app_client
+        except Exception:
+            pass
+        return self._initial_client
 
     def compose(self) -> ComposeResult:
         yield Label("Usage — Stats & History", id="usage-title")

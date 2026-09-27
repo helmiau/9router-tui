@@ -18,7 +18,18 @@ class EndpointsPane(Static):
 
     def __init__(self, client: NinerouterClient, **kw):
         super().__init__(**kw)
-        self.client = client
+        self._initial_client = client
+
+    @property
+    def client(self) -> NinerouterClient:
+        """Always use the app's current client so server switches apply instantly."""
+        try:
+            app_client = getattr(self.app, "client", None)
+            if app_client is not None:
+                return app_client
+        except Exception:
+            pass
+        return self._initial_client
         self._settings: Dict[str, Any] = {}
         self._tunnel: Dict[str, Any] = {}
 
